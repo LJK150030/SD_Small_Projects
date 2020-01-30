@@ -1,9 +1,11 @@
-#include "Game/GameCommon.hpp"
-#include "Game/App.hpp"
 #include "Engine/Core/WindowContext.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
 #include "Engine/Core/DevConsole.hpp"
 #include "Engine/Memory/Mem.hpp"
+
+#include "Game/App.hpp"
+#include "Game/GameCommon.hpp"
+
 #include "ThirdParty/imGUI/imgui.h"
 
 #define WINDOW_TITLE "Protogame3D"
@@ -20,116 +22,116 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wPram,
 //-----------------------------------------------------------------------------------------------
 bool WindowsMessageHandlingProcedure(void* window_handle, const uint32_t wm_message_code, const uintptr_t w_param, uintptr_t l_param)
 {
-	UNREFERENCED_PARAMETER(window_handle); 
+	UNREFERENCED_PARAMETER(window_handle);
 	UNUSED(l_param);
 
-	if(g_imGUI != nullptr)
+	if (g_imGUI != nullptr)
 	{
-		bool imguiHandled = ImGui_ImplWin32_WndProcHandler((HWND) window_handle, wm_message_code, w_param, l_param);
+		bool imguiHandled = ImGui_ImplWin32_WndProcHandler((HWND)window_handle, wm_message_code, w_param, l_param);
 		UNUSED(imguiHandled);
 	}
-	
+
 	switch (wm_message_code)
 	{
-		case WM_ACTIVATE:
-		{
-			g_theWindow->LockMouse();
-			return true;
-		}
+	case WM_ACTIVATE:
+	{
+		g_theWindow->LockMouse();
+		return true;
+	}
 
-		case BN_KILLFOCUS:
+	case BN_KILLFOCUS:
+	{
+		g_theWindow->UnlockMouse();
+		return true;
+	}
+
+	// App close requested via "X" button, or right-click "Close Window" on task bar, or "Close" from system menu, or Alt-F4
+	case WM_CLOSE:
+	{
+		g_theApp->HandleQuitRequested();
+		return true; // "Consumes" this message (tells Windows "okay, we handled it")
+	}
+
+	// Raw physical keyboard "key-was-just-depressed" event (case-insensitive, not translated)
+	case WM_KEYDOWN:
+	{
+		const unsigned char asKey = static_cast<unsigned char>(w_param);
+
+		if (DEV_CONSOLE_IN_USE)
 		{
-			g_theWindow->UnlockMouse();
-			return true;
+			if (g_theDevConsole->HandleKey(asKey))
+				return true;
 		}
-	
-		// App close requested via "X" button, or right-click "Close Window" on task bar, or "Close" from system menu, or Alt-F4
-		case WM_CLOSE:
+		if (asKey == VK_ESCAPE && !DEV_CONSOLE_IN_USE)
 		{
 			g_theApp->HandleQuitRequested();
 			return true; // "Consumes" this message (tells Windows "okay, we handled it")
 		}
-
-		// Raw physical keyboard "key-was-just-depressed" event (case-insensitive, not translated)
-		case WM_KEYDOWN:
+		if (g_imGUI != nullptr)
+		{
+			const ImGuiIO& io = ImGui::GetIO();
+			if (io.WantCaptureKeyboard)
+			{
+				return false;
+			}
+		}
+		if (g_theApp->HandleKeyPressed(asKey))
+			return true;
+		break;
+	}
+	// Raw physical keyboard "key-was-just-released" event (case-insensitive, not translated)
+	case WM_KEYUP:
+	{
+		unsigned char asKey = (unsigned char)w_param;
+		if (g_imGUI != nullptr)
+		{
+			const ImGuiIO& io = ImGui::GetIO();
+			if (io.WantCaptureKeyboard)
+			{
+				return false;
+			}
+		}
+		if (g_theApp->HandleKeyReleased(asKey))
+			return true;
+		break;
+	}
+	case WM_CHAR:
+	{
+		if (DEV_CONSOLE_IN_USE)
 		{
 			const unsigned char asKey = static_cast<unsigned char>(w_param);
-
-			if(DEV_CONSOLE_IN_USE)
-			{
-				if(g_theDevConsole->HandleKey(asKey))
-					return true;
-			}
-			if (asKey == VK_ESCAPE && !DEV_CONSOLE_IN_USE)
-			{
-				g_theApp->HandleQuitRequested();
-				return true; // "Consumes" this message (tells Windows "okay, we handled it")
-			}
-			if(g_imGUI != nullptr)
-			{
-				const ImGuiIO& io = ImGui::GetIO();
-				if(io.WantCaptureKeyboard)
-				{
-					return false;
-				}
-			}
-			if(g_theApp->HandleKeyPressed(asKey))
+			if (g_theDevConsole->HandleChar(asKey))
 				return true;
 			break;
 		}
-		// Raw physical keyboard "key-was-just-released" event (case-insensitive, not translated)
-		case WM_KEYUP:
+		if (g_imGUI != nullptr)
 		{
-			unsigned char asKey = (unsigned char)w_param;
-			if(g_imGUI != nullptr)
+			const ImGuiIO& io = ImGui::GetIO();
+			if (io.WantCaptureKeyboard)
 			{
-				const ImGuiIO& io = ImGui::GetIO();
-				if(io.WantCaptureKeyboard)
-				{
-					return false;
-				}
-			}
-			if(g_theApp->HandleKeyReleased(asKey))
-				return true;
-			break;
-		}
-		case WM_CHAR:
-		{
-			if(DEV_CONSOLE_IN_USE)
-			{
-				const unsigned char asKey = static_cast<unsigned char>(w_param);
-				if(g_theDevConsole->HandleChar(asKey))
-					return true;
-				break;
-			}
-			if(g_imGUI != nullptr)
-			{
-				const ImGuiIO& io = ImGui::GetIO();
-				if(io.WantCaptureKeyboard)
-				{
-					return false;
-				}
+				return false;
 			}
 		}
-		case WM_RBUTTONDBLCLK:
-		case WM_LBUTTONDOWN:
-		case WM_LBUTTONUP:
-		case WM_RBUTTONDOWN:
-		case WM_RBUTTONUP:
-		case WM_MBUTTONDOWN:
-		case WM_MBUTTONUP:
-		case WM_MOUSEWHEEL:
-		case WM_MOUSEHWHEEL:
+	}
+	case WM_RBUTTONDBLCLK:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MOUSEWHEEL:
+	case WM_MOUSEHWHEEL:
+	{
+		if (g_imGUI != nullptr)
+		{
+			const ImGuiIO& io = ImGui::GetIO();
+			if (io.WantCaptureKeyboard)
 			{
-				if(g_imGUI != nullptr)
-				{
-					const ImGuiIO& io = ImGui::GetIO();
-					if(io.WantCaptureKeyboard)
-					{
-						return false;
-					}
-				}
+				return false;
 			}
+		}
+	}
 	}
 
 	// Send back to Windows any unhandled/unconsumed messages we want other apps to see (e.g. play/pause in music apps, etc.)
@@ -141,7 +143,7 @@ bool WindowsMessageHandlingProcedure(void* window_handle, const uint32_t wm_mess
 void CreateWindowAndRenderContext(float clientAspect)
 {
 	g_theWindow = new WindowContext();
-	g_theWindow->CreateTheWindow( WINDOW_TITLE, clientAspect, .90f, WindowsMessageHandlingProcedure );
+	g_theWindow->CreateTheWindow(WINDOW_TITLE, clientAspect, .90f, WindowsMessageHandlingProcedure);
 
 	// this is the end of the windows part
 	g_theRenderer = new RenderContext(g_theWindow);
@@ -153,7 +155,7 @@ void CreateWindowAndRenderContext(float clientAspect)
 //	is called, telling us what happened (key up/down, minimized/restored, gained/lost focus, etc.)
 void RunMessagePump()
 {
-	g_theWindow->BeginFrame(); 
+	g_theWindow->BeginFrame();
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -162,7 +164,7 @@ void RunMessagePump()
 void RunFrame()
 {
 	RunMessagePump();
-	g_theApp->RunFrame();	
+	g_theApp->RunFrame();
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -173,7 +175,7 @@ void Startup()
 	XmlElement* root = config.RootElement();
 	g_gameConfigBlackboard.PopulateFromXmlElementAttributes(*root);
 	const float world_aspect = g_gameConfigBlackboard.GetValue("windowAspect", WORLD_ASPECT);
-	CreateWindowAndRenderContext( world_aspect );
+	CreateWindowAndRenderContext(world_aspect);
 	g_theApp = new App();
 	g_theApp->Startup();
 }
@@ -184,33 +186,33 @@ void Shutdown()
 	//	Destroy the global App instance
 	g_theApp->Shutdown();
 
-	delete g_theApp;		
+	delete g_theApp;
 	g_theApp = nullptr;
 
-	delete g_theWindow; 
-	g_theWindow = nullptr; 
+	delete g_theWindow;
+	g_theWindow = nullptr;
 }
 
 //-----------------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE application_instance_handle, HINSTANCE prev_instance, LPSTR command_line_string, int show_cmd)
 {
-	UNUSED( application_instance_handle ); 
-	UNUSED( command_line_string );
-	UNUSED( prev_instance );
-	UNUSED( show_cmd );
-	
+	UNUSED(application_instance_handle);
+	UNUSED(command_line_string);
+	UNUSED(prev_instance);
+	UNUSED(show_cmd);
+
 	Startup();
-	
+
 	// This bit benefits the most from making it a class - knowing when a processing messages 
 	// results int he window itself being closed so we can stop processing.
-	while( !g_theApp->IsQuitting()) 
+	while (!g_theApp->IsQuitting())
 	{
 		RunFrame();
 		Sleep(0);
 	}
 
 	Shutdown();
-	
+
 	MemTrackLogLiveAllocations();
 
 	return 0;

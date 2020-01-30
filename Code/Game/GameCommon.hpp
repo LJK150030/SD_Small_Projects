@@ -1,11 +1,8 @@
 #pragma once
-#include "Engine/EngineCommon.hpp"
 
 struct Rgba;
 struct Vec2;
 
-//GameCommon is holding mainly global values that will be used thought the game
-//constexpr float CLIENT_ASPECT = 2.0f; // We are requesting a 1:1 aspect (square) window area
 
 class App;
 class RenderContext;
@@ -15,17 +12,6 @@ class AudioSystem;
 extern App* g_theApp;
 extern AudioSystem* g_theAudio;
 
-//Window config
-constexpr float WORLD_ASPECT = 1.7777777777777778f;
-
-//Debug global variables
-constexpr int NUM_DISC_VERTICES = 16;
-
-//Camera global variables
-constexpr float WORLD_WIDTH = 71.1111111110f;
-constexpr float WORLD_HEIGHT = 40.0f;
-constexpr float WORLD_CENTER_X = WORLD_WIDTH / 2.f;
-constexpr float WORLD_CENTER_Y = WORLD_HEIGHT / 2.f;
 
 // key codes
 constexpr int SHIFT_KEY = 16;
@@ -73,12 +59,23 @@ constexpr int Y_KEY = 89;
 constexpr int Z_KEY = 90;
 constexpr int F1_KEY = 112;
 constexpr int F2_KEY = 113;
+constexpr int F3_KEY = 114;
+constexpr int F4_KEY = 115;
+constexpr int F5_KEY = 116;
+constexpr int F6_KEY = 117;
+constexpr int F7_KEY = 118;
 constexpr int F8_KEY = 119;
+constexpr int F9_KEY = 110;
+constexpr int F10_KEY = 111;
+constexpr int F11_KEY = 112;
+constexpr int F12_KEY = 113;
 constexpr int TILDE_KEY = 192;
 
-// camera global variables
-constexpr float MAX_SCREEN_SHAKE = 2.0f;
-constexpr float SCREEN_SHAKE_REDUCTION = 1.0f;
+//Window config
+constexpr float WORLD_ASPECT = 1.77777777777777777777777777778f;
 
-//One-off drawing functions
-void DrawLine(const Vec2& start, const Vec2& end, float thickness, const Rgba& tint);
+//Camera global variables
+constexpr float WORLD_HEIGHT = 100.0f;
+constexpr float WORLD_WIDTH = WORLD_HEIGHT * WORLD_ASPECT;
+constexpr float WORLD_CENTER_X = WORLD_WIDTH / 2.f;
+constexpr float WORLD_CENTER_Y = WORLD_HEIGHT / 2.f;

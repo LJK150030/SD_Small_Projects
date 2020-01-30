@@ -9,10 +9,6 @@
 #include "Engine/Core/WindowContext.hpp"
 #include "Engine/Core/Clock.hpp"
 #include "Engine/Memory/Mem.hpp"
-#include "Engine/Memory/ObjectAllocator.hpp"
-#include "Engine/Tools/Profiler.hpp"
-#include "Engine/Tools/Reports.hpp"
-#include "Scripting/Python/python.hpp"
 
 
 STATIC bool App::QuitRequest(EventArgs& args)
@@ -22,12 +18,14 @@ STATIC bool App::QuitRequest(EventArgs& args)
 	return true;
 }
 
+
 STATIC bool App::PrintMemAlloc(EventArgs& args)
 {
 	UNUSED(args);
 	DevConPrintMemTrack();
 	return true;
 }
+
 
 STATIC bool App::LogMemAlloc(EventArgs& args)
 {
@@ -36,10 +34,12 @@ STATIC bool App::LogMemAlloc(EventArgs& args)
 	return true;
 }
 
-App::App(): m_theGame(nullptr)
+
+App::App() : m_theGame(nullptr)
 {
 	ParseXmlFileToNamedString(g_gameConfigBlackboard, "Data/GameConfig.xml");
 }
+
 
 App::~App()
 {
@@ -50,23 +50,17 @@ App::~App()
 	m_devCamera = nullptr;
 }
 
+
 void App::Startup()
 {
-	//UnitTestsRunAllCategories(1);
-	
 	EngineStartup();
-	g_profiler->ProfilerResume();
-	UnitTestsRun("LoggingSystem", 0);
 	g_theWindow->SetMouseMode(MOUSE_MODE_ABSOLUTE);
-// 	g_theWindow->LockMouse();
-// 	g_theWindow->ShowMouse();
-// 	g_theWindow->HideMouse();
-	
+
 	m_theGame = new Game;
-	
+
 	m_devCamera = new Camera();
 	m_devCamera->SetColorTarget(nullptr);
-	m_devCamera->SetOrthoView( Vec2(0.0f, 0.0),	Vec2((WORLD_HEIGHT * WORLD_ASPECT), (WORLD_HEIGHT)) );
+	m_devCamera->SetOrthoView(Vec2(0.0f, 0.0), Vec2((WORLD_HEIGHT * WORLD_ASPECT), (WORLD_HEIGHT)));
 
 	m_theGame->Startup();
 
@@ -74,93 +68,47 @@ void App::Startup()
 	g_theEventSystem->SubscribeEventCallbackFunction("ShowMemAlloc", PrintMemAlloc);
 	g_theEventSystem->SubscribeEventCallbackFunction("LogMemAlloc", LogMemAlloc);
 	DevConPrintMemTrackType();
-
-
-// 
-// 	g_profilerPool = new(TrackedAllocator::s_instance) ObjectAllocator<dummy>();
-// 	g_profilerPool->Init(&TrackedAllocator::s_instance, 10);
-// 
-// 
-// 	dummy* one = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	one->color = Rgba::MAGENTA;
-// 	dummy* two = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* three = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* four = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* five = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* six = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* seven = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	seven->idenity = Vec3(1.0f, 2.0f, 3.0f);
-// 	dummy* eight = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* nine = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	// 	dummy* ten = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy*)));
-// 	// 	*ten = 10;
-// 
-// 	dummy* one2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* two2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* three2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* four2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* five2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* six2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* seven2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 
-// 	g_profilerPool->Free(four2);
-// 
-// 	dummy* eight2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* nine2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 	dummy* ten2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-// 
-// 	g_profilerPool->Free(one2);
-// 
-// 	dummy* eleven2 = static_cast<dummy*>(g_profilerPool->Alloc(sizeof(dummy)));
-	PythonSystemStartup();
 }
+
 
 void App::Shutdown()
 {
-/*	g_profilerPool->DeInit();*/
-	Reports report;
-	report.DebugPrintReport();
-
 	m_theGame->Shutdown();
-	PythonSystemShutdown();
 	EngineShutdown();
 }
 
+
 void App::RunFrame()
 {
-	g_profiler->ProfileBeginFrame("RunFrame");
 	BeginFrame();
 	Update();
 	Render();
 	EndFrame();
-	g_profiler->ProfileEndFrame();
 }
+
 
 void App::BeginFrame() const
 {
-	g_profiler->ProfilePush("App::BeginFrame");
 	g_theRenderer->BeginFrame();
 	g_theEventSystem->BeginFrame();
 	g_theDevConsole->BeginFrame();
 	g_theDebugRenderer->BeginFrame();
 	g_theAudio->BeginFrame();
-	g_profiler->ProfilePop();
+	m_theGame->BeginFrame();
 }
+
 
 void App::Update()
 {
-	g_profiler->ProfilePush("App::Update");
 	const double current_time = GetCurrentTimeSeconds();
-	//double delta_seconds = ClampDouble(current_time - m_timeLastFrame, 0.0, 0.1);
 	double delta_seconds = current_time - m_timeLastFrame;;
 	m_timeLastFrame = current_time;
-	
 
 	g_theClock->Step(delta_seconds);
 	g_theDevConsole->Update(g_theClock->m_frameTime);
 	m_theGame->Update(g_theClock->m_frameTime);
-	g_profiler->ProfilePop();
 }
+
 
 void App::Render() const
 {
@@ -168,15 +116,13 @@ void App::Render() const
 	m_theGame->Render();
 	g_theDebugRenderer->RenderToScreen();
 
-	m_theGame->UpdateImGUI();
-
-	if(DEV_CONSOLE_IN_USE)
+	if (DEV_CONSOLE_IN_USE)
 	{
 		m_devCamera->SetColorTarget(g_theRenderer->GetFrameColorTarget());
 
-		m_devCamera->SetModelMatrix( Matrix44::IDENTITY );
+		m_devCamera->SetModelMatrix(Matrix44::IDENTITY);
 		g_theRenderer->BeginCamera(m_devCamera);
-		g_theRenderer->ClearDepthStencilTarget( 1.0f );
+		g_theRenderer->ClearDepthStencilTarget(1.0f);
 
 		g_theDevConsole->Render(g_theRenderer, *m_devCamera);
 
@@ -184,14 +130,15 @@ void App::Render() const
 	}
 }
 
+
 void App::EndFrame() const
 {
-	// "Present" the back buffer by swapping the front (visible) and back (working) screen buffers
 	g_theRenderer->EndFrame();
 	g_theEventSystem->EndFrame();
 	g_theDevConsole->EndFrame();
 	g_theDebugRenderer->EndFrame();
 	g_theAudio->EndFrame();
+	m_theGame->EndFrame();
 }
 
 
@@ -201,6 +148,7 @@ bool App::HandleQuitRequested()
 	return true;
 }
 
+TODO("Need to make sure I am deleting everything, otherwise i get a nasty crash")
 void App::HardRestart()
 {
 	Shutdown();
@@ -208,6 +156,7 @@ void App::HardRestart()
 	m_theGame = nullptr;
 	Startup();
 }
+
 
 bool App::HandleKeyPressed(const unsigned char key_code)
 {
@@ -218,33 +167,16 @@ bool App::HandleKeyPressed(const unsigned char key_code)
 			m_isQuitting = true;
 		return true;
 
-	case T_KEY:
-		if (!DEV_CONSOLE_IN_USE)
-			m_isSlowMo = true;
-		return true;
-
-	case P_KEY:
-		if (!DEV_CONSOLE_IN_USE)
-			m_isPaused = true;
-		return true;
-
-	case Q_KEY:
-		g_profiler->ProfilerPause();
-		return true;
-
-	case E_KEY:
-		g_profiler->ProfilerResume();
-		return true;
-	
 	case F1_KEY:
 		if (!DEV_CONSOLE_IN_USE)
 			m_theGame->SetDeveloperMode(true);
 		return true;
 
-	case F8_KEY:
-		if (!DEV_CONSOLE_IN_USE)
-			HardRestart();
-		return true;
+		//	Did you do the TODO?
+		// 	case F8_KEY:
+		// 		if (!DEV_CONSOLE_IN_USE)
+		// 			HardRestart();
+		// 		return true;
 
 	case TILDE_KEY:
 		DEV_CONSOLE_IN_USE = !DEV_CONSOLE_IN_USE;
@@ -258,18 +190,11 @@ bool App::HandleKeyPressed(const unsigned char key_code)
 	}
 }
 
+
 bool App::HandleKeyReleased(const unsigned char key_code)
 {
 	switch (key_code)
 	{
-	case T_KEY:
-		m_isSlowMo = false;
-		return true;
-
-	case P_KEY:
-		m_isPaused = false;
-		return true;
-
 	case F1_KEY:
 		m_theGame->SetDeveloperMode(false);
 		return true;

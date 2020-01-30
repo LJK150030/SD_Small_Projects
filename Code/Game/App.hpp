@@ -20,7 +20,7 @@ public:
 	static bool QuitRequest(EventArgs& args);
 	static bool PrintMemAlloc(EventArgs& args);
 	static bool LogMemAlloc(EventArgs& args);
-	static bool LogThreadedTest(EventArgs& args);
+
 private:
 	void BeginFrame() const;
 	void Update();
@@ -29,10 +29,7 @@ private:
 
 private:
 	bool m_isQuitting = false;
-	bool m_isPaused = false;
-	bool m_isSlowMo = false;
 
-	//float m_deltaSeconds = (1.0f / 60.0f);
 	double m_timeLastFrame = 0.0f;
 	Game* m_theGame;
 
