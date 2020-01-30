@@ -1,0 +1,11 @@
+<GameConfig
+
+  startLevel   = "WizardTower3"
+  windowAspect = "1.77777777777777777777777777778"
+  isFullscreen = "false"
+  Screensize   = "1280,720"
+  
+  devConsoleFontFile = "DwarfFortressFont.png"
+  devConsoleFontSize = "0.5"
+
+/>

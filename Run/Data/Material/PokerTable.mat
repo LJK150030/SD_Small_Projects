@@ -1,0 +1,10 @@
+<material id="PokerTable">
+  <shader src="default_lit.hlsl" />
+  
+  <diffuse				src="table.jpeg" />
+  <texture index="1"	src="flat" />
+  <texture index="5"	src="white"/>
+  
+  <sampler index="0" type="linear" />
+
+</material>

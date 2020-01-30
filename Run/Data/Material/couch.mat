@@ -1,0 +1,16 @@
+<material id="couch">
+  <shader src="default_lit.hlsl" />
+  
+  <diffuse 			src="example_colour.png" />
+  <normal  			src="example_normal.png" />
+  <spec    			src="example_spec.png" />
+  <ambientocclusion	src="example_ao.png" />
+  <emissive			src="large.png" />
+  
+  <!--<texture index="0" color="0x8341FFFF" />
+  <texture index="1" src="flat" />-->
+  
+
+  <sampler idx="0" type="linear" />
+
+</material>

@@ -1,0 +1,10 @@
+<material id="couch">
+  <shader src="default_lit.hlsl" />
+  
+  <diffuse 			src="woodcrate.jpg" />
+  <texture index="1" src="flat" />
+  <texture index="5" src="white"/>
+  
+  <sampler index="0" type="linear" />
+
+</material>

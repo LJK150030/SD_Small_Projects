@@ -1,0 +1,22 @@
+<material id="test.mat">
+	<shader src="default_lit.hlsl" />
+
+	<diffuse src="Test_StbiFlippedAndOpenGL.png" />
+	<sampler index="0" name="point" />
+	
+	<normal src="flat" />
+	<sampler index="1" name="point" />
+	
+	<emissive src="black" />
+	<sampler index="2" name="point" />
+	
+	<specular src="white" />
+	<sampler index="3" name="point" />
+	
+	<ambientocclusion src="white" />
+	<sampler index="4" name="point" />
+	
+	<bump src="black"/>
+	<sampler index="5" name="point" />
+
+</material>

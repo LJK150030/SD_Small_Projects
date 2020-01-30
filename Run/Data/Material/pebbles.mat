@@ -1,0 +1,13 @@
+<material id="couch">
+  <shader src="default_lit.hlsl" />
+ 
+  <diffuse 			src="Rock_Albedo.jpg" />
+  <normal  			src="Rock_Normal.jpg" />
+  <spec    			src="Rock_Specularity.jpg" />
+  <bump				src="Rock_Displacement.jpg" />
+  <ambientocclusion	src="Rock_AO.jpg" />
+  <emissive			src="Rock_Roughness.jpg" />
+  
+  <sampler index="0" type="linear" />
+
+</material>
