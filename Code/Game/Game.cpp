@@ -79,6 +79,8 @@ void Game::Update(const double delta_seconds)
 	m_currentFrame++;
 
 	ImGui::Text("Hello\nWorld"); ImGui::SameLine();
+
+	m_mousePos = g_theWindow->GetMousePosition(WORLD_BOUNDS);
 }
 
 
@@ -145,7 +147,8 @@ void Game::InitCamera()
 {
 	m_gameCamera = new Camera();
 	m_gameCamera->SetColorTarget(nullptr); // when binding, if nullptr, use the backbuffer
-	m_gameCamera->SetPerspectiveProjection(m_camFOVDegrees, WORLD_ASPECT, 0.1f, 100.0f);
+	//m_gameCamera->SetPerspectiveProjection(m_camFOVDegrees, WORLD_ASPECT, 0.1f, 100.0f);
+	m_gameCamera->SetOrthoView(WORLD_BL_CORNER, WORLD_TR_CORNER);
 }
 
 
@@ -158,7 +161,7 @@ void Game::InitGameObjs()
 
 	//Get the mesh for all the game objs
 	CPUMesh quad_mesh;
-	CpuMeshAddQuad(&quad_mesh, AABB2(-1.0f, -1.0f, 1.0f, 1.0f));
+	CpuMeshAddQuad(&quad_mesh, AABB2(-10.0f, -10.0f, 10.0f, 10.0f));
 	m_quad = new GPUMesh(g_theRenderer);
 	m_quad->CreateFromCPUMesh<Vertex_Lit>(quad_mesh); // we won't be updated this;
 }

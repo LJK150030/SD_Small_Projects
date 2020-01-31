@@ -1,8 +1,6 @@
 #pragma once
-
-struct Rgba;
-struct Vec2;
-
+#include "Engine/Math\Vec2.hpp"
+#include "Engine/Math/AABB2.hpp"
 
 class App;
 class RenderContext;
@@ -77,5 +75,9 @@ constexpr float WORLD_ASPECT = 1.77777777777777777777777777778f;
 //Camera global variables
 constexpr float WORLD_HEIGHT = 100.0f;
 constexpr float WORLD_WIDTH = WORLD_HEIGHT * WORLD_ASPECT;
-constexpr float WORLD_CENTER_X = WORLD_WIDTH / 2.f;
-constexpr float WORLD_CENTER_Y = WORLD_HEIGHT / 2.f;
+constexpr float WORLD_CENTER_X = 0.0f;
+constexpr float WORLD_CENTER_Y = 0.0f;
+
+const Vec2 WORLD_BL_CORNER(-0.5f * WORLD_WIDTH, -0.5f * WORLD_HEIGHT);
+const Vec2 WORLD_TR_CORNER(0.5f * WORLD_WIDTH, 0.5f * WORLD_HEIGHT);
+const AABB2 WORLD_BOUNDS(WORLD_BL_CORNER, WORLD_TR_CORNER);

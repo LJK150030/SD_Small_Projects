@@ -41,12 +41,15 @@ private:
 	int m_currentFrame = 0;
 
 	Camera* m_gameCamera = nullptr;
-	Vec3 m_camPosition = Vec3(0.0f, 0.0f, -10.0f); // we'll start 10 back; 
+	Vec3 m_camPosition = Vec3(0.0f, 0.0f, 0.0f);  
 	Vec3 m_camEuler = Vec3(0.0f, 0.0f, 0.0f);
 	float m_camFOVDegrees = 90.0f;
 
 	Material* m_woodMaterial = nullptr;
 	Shader* m_defaultShader = nullptr;
 	GPUMesh* m_quad;
-	Matrix44 m_quadTransform = Matrix44::IDENTITY; // cube's model matrix
+	Matrix44 m_quadTransform = Matrix44::IDENTITY; // quad's model matrix
+
+	
+	Vec2 m_mousePos = Vec2::ZERO;
 };
