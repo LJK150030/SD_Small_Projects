@@ -7,7 +7,7 @@
 
 Point::Point(Game* the_game): Entity(the_game)
 {
-	m_scale = 10.0f;
+	m_scale = 0.1f;
 
 	CPUMesh disc_mesh;
 	CpuMeshAddDisc(&disc_mesh, Rgba::CYAN, 1.0f);

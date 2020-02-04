@@ -33,7 +33,8 @@ public:
 	bool HandleKeyReleased(unsigned char key_code);
 	void SetDeveloperMode(bool on_or_off);
 
-	Vec2 GetMousePosition();
+	Vec2 GetMousePosition() const;
+	bool InDeveloperMode() const;
 
 private:
 	void GarbageCollection() const;

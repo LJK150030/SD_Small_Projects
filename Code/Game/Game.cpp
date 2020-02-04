@@ -14,6 +14,7 @@
 #include "Game/Game.hpp"
 #include "Game/GameCommon.hpp"
 #include "Game/Point.hpp"
+#include "Game/ConvexShape.hpp"
 
 #include <vector>
 
@@ -43,16 +44,13 @@ Game::Game()
 {
 	m_entities = std::vector<Entity*>();
 	m_entities.push_back(new Point(this));
+	m_entities.push_back(new ConvexShape2D(this));
 }
 
 
 Game::~Game()
 {
-	for(int ent_idx = 0; ent_idx < static_cast<int>(m_entities.size()); ++ent_idx)
-	{
-		delete m_entities[ent_idx];
-		m_entities[ent_idx] = nullptr;
-	}
+
 }
 
 
@@ -65,6 +63,13 @@ void Game::Startup()
 
 void Game::Shutdown()
 {
+
+	for (int ent_idx = 0; ent_idx < static_cast<int>(m_entities.size()); ++ent_idx)
+	{
+		delete m_entities[ent_idx];
+		m_entities[ent_idx] = nullptr;
+	}
+	
 	delete m_gameCamera;
 	m_gameCamera = nullptr;
 
@@ -147,16 +152,22 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 {
 	switch (key_code)
 	{
-	default:
-		return false;
+		
+		default:
+			return false;
 	}
 }
 
 
 bool Game::HandleKeyReleased(const unsigned char key_code)
 {
-	UNUSED(key_code);
-	return true;
+	switch (key_code)
+	{
+		
+		default:
+			return false;
+	}
+		
 }
 
 
@@ -165,9 +176,14 @@ void Game::SetDeveloperMode(const bool on_or_off)
 	m_inDevMode = on_or_off;
 }
 
-Vec2 Game::GetMousePosition()
+Vec2 Game::GetMousePosition() const
 {
 	return m_mousePos;
+}
+
+bool Game::InDeveloperMode() const
+{
+	return m_inDevMode;
 }
 
 

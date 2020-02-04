@@ -148,13 +148,13 @@ bool App::HandleQuitRequested()
 	return true;
 }
 
-TODO("Need to make sure I am deleting everything, otherwise i get a nasty crash")
 void App::HardRestart()
 {
-	Shutdown();
+	m_theGame->Shutdown();
 	delete m_theGame;
 	m_theGame = nullptr;
-	Startup();
+	m_theGame = new Game;
+	m_theGame->Startup();
 }
 
 
@@ -172,11 +172,10 @@ bool App::HandleKeyPressed(const unsigned char key_code)
 			m_theGame->SetDeveloperMode(true);
 		return true;
 
-		//	Did you do the TODO?
-		// 	case F8_KEY:
-		// 		if (!DEV_CONSOLE_IN_USE)
-		// 			HardRestart();
-		// 		return true;
+	case F8_KEY:
+		if (!DEV_CONSOLE_IN_USE)
+			HardRestart();
+		return true;
 
 	case TILDE_KEY:
 		DEV_CONSOLE_IN_USE = !DEV_CONSOLE_IN_USE;

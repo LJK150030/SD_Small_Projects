@@ -41,4 +41,6 @@ protected:
 
 	GPUMesh* m_mesh = nullptr;
 	Material* m_material = nullptr;
+
+	GPUMesh* m_debugMesh = nullptr;
 };
