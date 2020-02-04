@@ -3,6 +3,8 @@
 #include "Engine/Math/Matrix44.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
 
+#include "Game/Entity.hpp"
+
 class Camera;
 class Shader;
 class GPUMesh;
@@ -20,14 +22,18 @@ public:
 
 	void BeginFrame() const;
 	void Update(double delta_seconds);
+	void UpdateEntities(double delta_seconds);
 
 	void Render() const;
+	void RenderEntities() const;
 
 	void EndFrame() const;
 
 	bool HandleKeyPressed(unsigned char key_code);
 	bool HandleKeyReleased(unsigned char key_code);
 	void SetDeveloperMode(bool on_or_off);
+
+	Vec2 GetMousePosition();
 
 private:
 	void GarbageCollection() const;
@@ -43,7 +49,6 @@ private:
 	Camera* m_gameCamera = nullptr;
 	Vec3 m_camPosition = Vec3(0.0f, 0.0f, 0.0f);  
 	Vec3 m_camEuler = Vec3(0.0f, 0.0f, 0.0f);
-	float m_camFOVDegrees = 90.0f;
 
 	Material* m_woodMaterial = nullptr;
 	Shader* m_defaultShader = nullptr;
@@ -52,4 +57,6 @@ private:
 
 	
 	Vec2 m_mousePos = Vec2::ZERO;
+
+	std::vector<Entity*> m_entities;
 };

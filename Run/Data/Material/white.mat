@@ -1,0 +1,22 @@
+<material id="white.mat">
+	<shader src="default_unlit.hlsl" />
+
+	<diffuse src="white" />
+	<sampler index="0" name="point" />
+	
+	<normal src="flat" />
+	<sampler index="1" name="point" />
+	
+	<emissive src="black" />
+	<sampler index="2" name="point" />
+	
+	<specular src="white" />
+	<sampler index="3" name="point" />
+	
+	<ambientocclusion src="white" />
+	<sampler index="4" name="point" />
+	
+	<bump src="black"/>
+	<sampler index="5" name="point" />
+
+</material>

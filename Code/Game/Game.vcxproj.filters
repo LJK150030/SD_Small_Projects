@@ -25,6 +25,9 @@
     <ClCompile Include="Entity.cpp">
       <Filter>General</Filter>
     </ClCompile>
+    <ClCompile Include="Point.cpp">
+      <Filter>General</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp">
@@ -40,6 +43,9 @@
       <Filter>General</Filter>
     </ClInclude>
     <ClInclude Include="EngineBuildPreferences.hpp">
+      <Filter>General</Filter>
+    </ClInclude>
+    <ClInclude Include="Point.hpp">
       <Filter>General</Filter>
     </ClInclude>
   </ItemGroup>

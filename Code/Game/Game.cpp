@@ -13,6 +13,7 @@
 
 #include "Game/Game.hpp"
 #include "Game/GameCommon.hpp"
+#include "Game/Point.hpp"
 
 #include <vector>
 
@@ -40,11 +41,18 @@ UNITTEST("Is false", nullptr, 2)
 
 Game::Game()
 {
+	m_entities = std::vector<Entity*>();
+	m_entities.push_back(new Point(this));
 }
 
 
 Game::~Game()
 {
+	for(int ent_idx = 0; ent_idx < static_cast<int>(m_entities.size()); ++ent_idx)
+	{
+		delete m_entities[ent_idx];
+		m_entities[ent_idx] = nullptr;
+	}
 }
 
 
@@ -81,6 +89,16 @@ void Game::Update(const double delta_seconds)
 	ImGui::Text("Hello\nWorld"); ImGui::SameLine();
 
 	m_mousePos = g_theWindow->GetMousePosition(WORLD_BOUNDS);
+
+	UpdateEntities(delta_seconds);
+}
+
+void Game::UpdateEntities(double delta_seconds)
+{
+	for (int ent_idx = 0; ent_idx < static_cast<int>(m_entities.size()); ++ent_idx)
+	{
+		m_entities[ent_idx]->Update(delta_seconds);
+	}
 }
 
 
@@ -98,15 +116,26 @@ void Game::Render() const
 	g_theRenderer->ClearScreen(Rgba::BLACK);
 	g_theRenderer->ClearDepthStencilTarget(1.0f);
 
-	g_theRenderer->BindModelMatrix(m_quadTransform);
-	g_theRenderer->BindMaterial(*m_woodMaterial);
-	g_theRenderer->DrawMesh(*m_quad);
+// 	g_theRenderer->BindModelMatrix(m_quadTransform);
+// 	g_theRenderer->BindMaterial(*m_woodMaterial);
+// 	g_theRenderer->DrawMesh(*m_quad);
 
+	RenderEntities();
 	g_imGUI->Render();
 
 	g_theRenderer->EndCamera(m_gameCamera);
 	g_theDebugRenderer->RenderToCamera(m_gameCamera);
 
+}
+
+void Game::RenderEntities() const
+{
+	//would like to populate a buffer and do one single draw call, but till then
+
+	for (int ent_idx = 0; ent_idx < static_cast<int>(m_entities.size()); ++ent_idx)
+	{
+		m_entities[ent_idx]->Render();
+	}
 }
 
 void Game::EndFrame() const
@@ -134,6 +163,11 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 void Game::SetDeveloperMode(const bool on_or_off)
 {
 	m_inDevMode = on_or_off;
+}
+
+Vec2 Game::GetMousePosition()
+{
+	return m_mousePos;
 }
 
 
