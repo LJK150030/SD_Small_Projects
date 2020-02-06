@@ -198,6 +198,18 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
+		case NUM_1_KEY: // double the number of shapes
+		{
+			m_movableRay.SetStart(m_mousePos);
+			m_sceneUpdated = true;
+			break;
+		}
+		case NUM_2_KEY: // double the number of shapes
+		{
+			m_movableRay.SetEnd(m_mousePos);
+			m_sceneUpdated = true;
+			break;
+		}
 		default:
 		{
 			return false;\
@@ -238,19 +250,6 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
-		case NUM_1_KEY: // double the number of shapes
-		{
-			m_movableRay.SetStart(m_mousePos);
-			m_sceneUpdated = true;
-			break;
-		}
-		case NUM_2_KEY: // double the number of shapes
-		{
-			m_movableRay.SetEnd(m_mousePos);
-			m_sceneUpdated = true;
-			break;
-		}
-
 		
 		default:
 		{

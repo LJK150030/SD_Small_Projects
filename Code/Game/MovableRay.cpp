@@ -94,24 +94,8 @@ void MovableRay::SetEnd(const Vec2& pos)
 
 void MovableRay::ConstructArrow()
 {
-	const float thickness = 0.25f;
-	const Vec2 dir =			(m_segment.m_end - m_segment.m_start).GetNormalized();
-	const Vec2 orthogonal =		dir.GetRotated90Degrees();
-
-	const Vec2 top_left =		m_segment.m_start + thickness * orthogonal;
-	const Vec2 bottom_left =	m_segment.m_start + -thickness * orthogonal;
-	const Vec2 top_right =		m_segment.m_end - dir + thickness * orthogonal;
-	const Vec2 bottom_right =	m_segment.m_end - dir -thickness * orthogonal;
-
- 	const Vec2 arrow_bottom =	bottom_right - dir + -2.0f * thickness * orthogonal;
- 	const Vec2 arrow_mid =		m_segment.m_end;
- 	const Vec2 arrow_top =		top_right - dir + 2.0f * thickness * orthogonal;
-	
 	CPUMesh arrow_mesh;
-	CpuMeshAddTriangle(&arrow_mesh, false, top_left, bottom_left, bottom_right, m_rayCastColor, 0);
-	CpuMeshAddTriangle(&arrow_mesh, true, top_left, bottom_right, top_right, m_rayCastColor, 1);
-	CpuMeshAddTriangle(&arrow_mesh, true, arrow_bottom, arrow_mid, arrow_top, m_rayCastColor, 2);
-
+	CpuMeshAddArrow(&arrow_mesh, m_rayCastColor, m_segment.m_start, m_segment.m_end, 0.25f);
 	m_mesh = new GPUMesh(g_theRenderer);
 	m_mesh->CreateFromCPUMesh<Vertex_PCU>(arrow_mesh); // we won't be updated this
 }
