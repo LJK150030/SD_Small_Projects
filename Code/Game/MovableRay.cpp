@@ -98,20 +98,20 @@ void MovableRay::SetEnd(const Vec2& pos)
 
 void MovableRay::CollideWithConvexShape(const ConvexShape2D& shape)
 {
-	std::vector<Plane2> planes = shape.GetConvexPlanes();
+	std::vector<Segment2> segments = shape.GetConvexSegments();
 	std::vector<Vec2> points = shape.GetConvexPoints();
 
 	Matrix44 shape_local = shape.GetModelMatrix().GetInverseMatrix();
 	Vec2 local_pos = shape_local.GetTransformPosition2D(m_segment.GetStart());
 	Vec2 local_dir = shape_local.GetTransformVector2D(m_ray.m_dir);
 
-	for(int plane_idx = 0; plane_idx < static_cast<int>(planes.size()); ++plane_idx)
+	for(int plane_idx = 0; plane_idx < static_cast<int>(segments.size()); ++plane_idx)
 	{
 		float t_vals[2];
 
 		Ray2 temp_array(local_pos, local_dir);
 
-		uint num_hits = Raycast(t_vals, temp_array, planes[plane_idx]);
+		uint num_hits = Raycast(t_vals, temp_array, segments[plane_idx]);
 
 		if(num_hits > 0)
 		{

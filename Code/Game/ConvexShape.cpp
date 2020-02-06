@@ -316,3 +316,16 @@ std::vector<Vec2> ConvexShape2D::GetConvexPoints() const
 {
 	return m_polygon.m_points;
 }
+
+std::vector<Segment2> ConvexShape2D::GetConvexSegments() const
+{
+	std::vector<Segment2> list;
+	int num_points = static_cast<int>(m_polygon.m_points.size());
+
+	for(int point_idx = 0; point_idx < num_points; ++point_idx)
+	{
+		list.push_back(Segment2(m_polygon.m_points[point_idx], m_polygon.m_points[(point_idx + 1)%num_points]));
+	}
+
+	return list;
+}
