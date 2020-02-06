@@ -40,7 +40,7 @@ UNITTEST("Is false", nullptr, 2)
 }
 
 
-Game::Game(): m_mouseEntity(this)
+Game::Game(): m_mouseEntity(this), m_movableRay(this)
 {
 	m_convexShapes = std::vector<ConvexShape2D*>();
 	m_convexShapes.push_back(new ConvexShape2D(this));
@@ -104,6 +104,7 @@ void Game::Update(const double delta_seconds)
 void Game::UpdateEntities(double delta_seconds)
 {
 	m_mouseEntity.Update(static_cast<float>(delta_seconds));
+	m_movableRay.Update(static_cast<float>(delta_seconds));
 	MouseCollisionTest(m_selectedShapes);
 	
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
@@ -143,6 +144,7 @@ void Game::RenderEntities() const
 		m_convexShapes[ent_idx]->Render();
 	}
 
+	m_movableRay.Render();
 	m_mouseEntity.Render();
 }
 
@@ -236,6 +238,19 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
+		case NUM_1_KEY: // double the number of shapes
+		{
+			m_movableRay.SetStart(m_mousePos);
+			m_sceneUpdated = true;
+			break;
+		}
+		case NUM_2_KEY: // double the number of shapes
+		{
+			m_movableRay.SetEnd(m_mousePos);
+			m_sceneUpdated = true;
+			break;
+		}
+
 		
 		default:
 		{

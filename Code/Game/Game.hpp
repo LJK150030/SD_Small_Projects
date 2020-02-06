@@ -5,6 +5,7 @@
 #include "Engine/Math/Segment2.hpp"
 
 #include "Game/Point.hpp"
+#include "Game/MovableRay.hpp"
 
 class Camera;
 class Shader;
@@ -63,7 +64,8 @@ private:
 
 	Vec2 m_mousePos = Vec2::ZERO;
 	Point m_mouseEntity;
-
+	MovableRay m_movableRay;
+	
 	std::vector<ConvexShape2D*> m_convexShapes;
 	std::vector<ConvexShape2D*> m_selectedShapes;
 	int m_currentNumConvexShapes = 1;

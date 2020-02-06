@@ -57,7 +57,7 @@ private:
 class ConvexShape2D: public Entity
 {
 public:
-	ConvexShape2D(Game* the_game);
+	explicit ConvexShape2D(Game* the_game);
 	~ConvexShape2D();
 
 	void Update(float delta_seconds) override;

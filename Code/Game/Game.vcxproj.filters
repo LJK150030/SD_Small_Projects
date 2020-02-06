@@ -31,6 +31,9 @@
     <ClCompile Include="ConvexShape.cpp">
       <Filter>General</Filter>
     </ClCompile>
+    <ClCompile Include="MovableRay.cpp">
+      <Filter>General</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp">
@@ -52,6 +55,9 @@
       <Filter>General</Filter>
     </ClInclude>
     <ClInclude Include="ConvexShape.hpp">
+      <Filter>General</Filter>
+    </ClInclude>
+    <ClInclude Include="MovableRay.hpp">
       <Filter>General</Filter>
     </ClInclude>
   </ItemGroup>
