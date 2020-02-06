@@ -104,6 +104,8 @@ void Game::UpdateEntities(double delta_seconds)
 {
 	m_mouseEntity.Update(delta_seconds);
 
+	MouseCollisionTest();
+
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 	{
 		m_convexShapes[ent_idx]->Update(delta_seconds);
@@ -281,7 +283,7 @@ void Game::MouseCollisionTest()
 	//TODO: from naive attempt to Space partitioning
 	for(int shape_idx = 0; shape_idx < static_cast<int>(m_convexShapes.size()); ++shape_idx)
 	{
-		
+		m_convexShapes[shape_idx]->CollisionFromPoint(m_mousePos);
 	}
 	
 	

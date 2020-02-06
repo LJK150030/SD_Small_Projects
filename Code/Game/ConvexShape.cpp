@@ -121,7 +121,9 @@ bool ConvexShape2D::DestroyEntity()
 
 bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
 {
-	return false;
+	m_collideThisFrame = IsPointInDisc2D(pos, m_position, m_scale);
+	
+	return 	m_collideThisFrame;
 }
 
 void ConvexShape2D::RandomCcwPoints(std::vector<Vec2>& out) const

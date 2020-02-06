@@ -46,8 +46,20 @@ private:
 		0.0980392156862745f,
 		0.3200000000000000f);
 	
-	Rgba m_debugColor = Rgba(0.0f, 1.0f, 1.0f, 0.2f);
-	Rgba m_collideColor = Rgba(0.0f, 1.0f, 1.0f, 0.2f);
+	Rgba m_debugColor = Rgba(
+		0.0784313725490196f,
+		0.7098039215686275f,
+		0.8000000000000000f, 
+		0.2f
+	);
+	
+	Rgba m_collideColor = Rgba(
+		1.0000000000000000f, 
+		0.8980392156862745f,
+		0.0980392156862745f,
+		0.2f
+	);
+	
 	bool m_collideThisFrame = false;
 	
 	float m_minAngle = 10.0f;
