@@ -6,14 +6,151 @@
 #include "Engine/Core/ErrorWarningAssert.hpp"
 
 
+ConvexHull2D::ConvexHull2D()
+{
+	m_planes = std::vector<Plane2>();
+	m_numPlanes = 0;
+	
+	m_debugLineMeshList = std::vector<GPUMesh*>();
+	m_debugPointMeshList = std::vector<GPUMesh*>();
+}
+
+
+ConvexHull2D::~ConvexHull2D()
+{
+	for (int plane_idx = 0; plane_idx < static_cast<int>(m_debugLineMeshList.size()); ++plane_idx)
+	{
+		if (m_debugLineMeshList[plane_idx])
+		{
+			delete m_debugLineMeshList[plane_idx];
+			m_debugLineMeshList[plane_idx] = nullptr;
+		}
+	}
+	
+	for (int plane_idx = 0; plane_idx < static_cast<int>(m_debugPointMeshList.size()); ++plane_idx)
+	{
+		if (m_debugPointMeshList[plane_idx])
+		{
+			delete m_debugPointMeshList[plane_idx];
+			m_debugPointMeshList[plane_idx] = nullptr;
+		}
+	}
+}
+
+
+ConvexHull2D::ConvexHull2D(const ConvexPolygon2D& poly)
+{
+	m_numPlanes = static_cast<int>(poly.m_points.size());
+	m_debugLineMeshList = std::vector<GPUMesh*>();
+	m_debugLineMeshList.resize(m_numPlanes);
+	m_debugPointMeshList = std::vector<GPUMesh*>();
+	m_debugPointMeshList.resize(m_numPlanes);
+
+	for(int point_idx = 0; point_idx < m_numPlanes; ++point_idx)
+	{
+		int point_ahead = (point_idx + 1) % m_numPlanes;
+		
+		Vec2 p1 = poly.m_points[point_idx];
+		Vec2 p2 = poly.m_points[point_ahead];
+		Plane2 plane = Plane2(p1, p2);
+		
+		m_planes.push_back(plane);
+	}
+}
+
+
+void ConvexHull2D::Update(const Vec2& mouse_position)
+{
+	for(int plane_idx = 0; plane_idx < m_numPlanes; ++plane_idx)
+	{
+		//first remove lines
+		if (m_debugLineMeshList[plane_idx])
+		{
+			delete m_debugLineMeshList[plane_idx];
+			m_debugLineMeshList[plane_idx] = nullptr;
+		}
+		
+		//and remove discs
+		if (m_debugPointMeshList[plane_idx])
+		{
+			delete m_debugPointMeshList[plane_idx];
+			m_debugPointMeshList[plane_idx] = nullptr;
+		}
+
+		
+		//replace lines
+		Vec2 plane_dir = m_planes[plane_idx].m_normal.GetRotated90Degrees();
+		Vec2 point_1_on_plane = m_planes[plane_idx].m_normal * m_planes[plane_idx].m_signedDistance;
+
+		Vec2 far_point_1 = plane_dir * 100.0f + point_1_on_plane;
+		Vec2 far_point_2 = plane_dir * -100.0f + point_1_on_plane;
+
+		CPUMesh line_mesh;
+		CpuMeshAddLine(&line_mesh, far_point_1, far_point_2, 0.025f, Rgba::MAGENTA);
+		m_debugLineMeshList[plane_idx] = new GPUMesh(g_theRenderer);
+		m_debugLineMeshList[plane_idx]->CreateFromCPUMesh<Vertex_PCU>(line_mesh);
+
+		//replace intersection point
+		Vec2 closest_point = m_planes[plane_idx].ClosestPoint(mouse_position);
+
+		CPUMesh disc_mesh;
+		CpuMeshAddDisc(&disc_mesh, Rgba::YELLOW, closest_point, 0.05f);
+		m_debugPointMeshList[plane_idx] = new GPUMesh(g_theRenderer);
+		m_debugPointMeshList[plane_idx]->CreateFromCPUMesh<Vertex_PCU>(disc_mesh);
+	}
+
+
+}
+
+void ConvexHull2D::DebugRender(const Matrix44& model_matrix) const
+{
+		g_theRenderer->BindModelMatrix(model_matrix);
+	
+	for(int plane_idx = 0; plane_idx < m_numPlanes; ++plane_idx)
+	{
+		if (m_debugLineMeshList[plane_idx])
+		{
+			g_theRenderer->DrawMesh(*m_debugLineMeshList[plane_idx]);
+		}
+
+		if (m_debugPointMeshList[plane_idx])
+		{
+			g_theRenderer->DrawMesh(*m_debugPointMeshList[plane_idx]);	
+		}
+	}
+}
+
+//--------------------------------------------------------------------
+
+
+ConvexPolygon2D::ConvexPolygon2D()
+{
+}
+
+
+ConvexPolygon2D::~ConvexPolygon2D()
+{
+}
+
+ConvexPolygon2D::ConvexPolygon2D(const ConvexHull2D& hull)
+{
+	UNUSED(hull);
+	ASSERT_OR_DIE(false, "ConvexPolygon2D using a hull has not been made yet")
+}
+
+
+//--------------------------------------------------------------------
+
+
 ConvexShape2D::ConvexShape2D(Game* the_game): Entity(the_game)
 {
-	m_scale = g_randomNumberGenerator.GetRandomFloatInRange(m_minSize, m_maxSize);;
+	m_scale = g_randomNumberGenerator.GetRandomFloatInRange(m_minSize, m_maxSize);
 	m_position = Vec2(
 		g_randomNumberGenerator.GetRandomFloatInRange(m_minX, m_maxX),
 		g_randomNumberGenerator.GetRandomFloatInRange(m_minY, m_maxY));
 	
 	RandomCcwPoints(m_polygon.m_points);
+	m_hull = m_polygon;
 
 	int triangle_set = static_cast<int>(m_polygon.m_points.size()) - 2;
 
@@ -60,16 +197,18 @@ void ConvexShape2D::Update(float delta_seconds)
 
 	Rgba color = m_debugColor;
 
-	if(m_collideThisFrame)
+	if(m_collideThisFrame && m_game->InDeveloperMode())
 	{
 		color = m_collideColor;
+		m_hull.Update(m_mouseLocalPos);
 	}
-	m_collideThisFrame = false;
 	
 	CPUMesh disc_mesh;
 	CpuMeshAddDisc(&disc_mesh, color, 1.0f);
 	m_debugMesh = new GPUMesh(g_theRenderer);
 	m_debugMesh->CreateFromCPUMesh<Vertex_PCU>(disc_mesh);
+	
+	m_collideThisFrame = false;
 }
 
 
@@ -88,6 +227,8 @@ void ConvexShape2D::Render() const
 			g_theRenderer->BindModelMatrix(model_matrix);
 			g_theRenderer->BindMaterial(*m_material);
 			g_theRenderer->DrawMesh(*m_debugMesh);
+			
+			m_hull.DebugRender(model_matrix);
 		}
 	}
 }
@@ -122,6 +263,9 @@ bool ConvexShape2D::DestroyEntity()
 bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
 {
 	m_collideThisFrame = IsPointInDisc2D(pos, m_position, m_scale);
+	Matrix44 model_matrix = GetModelMatrix();
+	model_matrix = model_matrix.GetInverseMatrix();
+	m_mouseLocalPos = model_matrix.GetTransformPosition2D(pos);
 	
 	return 	m_collideThisFrame;
 }

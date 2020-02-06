@@ -5,17 +5,40 @@
 
 #include <vector>
 
+struct ConvexHull2D;
+struct ConvexPolygon2D;
 
 struct ConvexHull2D
 {
+	ConvexHull2D();
+	~ConvexHull2D();
+	
+	ConvexHull2D(const ConvexPolygon2D& poly);
+	
+	void Update(const Vec2& mouse_position);
+	void DebugRender(const Matrix44& model_matrix) const;
+	
 	std::vector<Plane2> m_planes;
+	int	m_numPlanes;
+	
+	std::vector<GPUMesh*> m_debugLineMeshList;
+	std::vector<GPUMesh*> m_debugPointMeshList;
 };
 
+
+//--------------------------------------------------------------------
 
 struct ConvexPolygon2D
 {
+	ConvexPolygon2D();
+	~ConvexPolygon2D();
+
+	explicit ConvexPolygon2D(const ConvexHull2D& hull);
+
 	std::vector<Vec2> m_points; //in counter_clockwise order
 };
+
+//--------------------------------------------------------------------
 
 class ConvexShape2D: public Entity
 {
@@ -70,4 +93,6 @@ private:
 	float m_maxX = WORLD_TR_CORNER.x;
 	float m_minY = WORLD_BL_CORNER.y;
 	float m_maxY = WORLD_TR_CORNER.y;
+
+	Vec2 m_mouseLocalPos = Vec2::ZERO;
 };
