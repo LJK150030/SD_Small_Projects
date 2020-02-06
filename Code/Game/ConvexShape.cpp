@@ -293,6 +293,11 @@ bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
 	Matrix44 model_matrix = GetModelMatrix();
 	model_matrix = model_matrix.GetInverseMatrix();
 	m_pointLocalPos = model_matrix.GetTransformPosition2D(pos);
+
+	if(m_collideThisFrame)
+	{
+		m_collideThisFrame = IsPointInsideShape(m_pointLocalPos);
+	}
 	
 	return 	m_collideThisFrame;
 }
@@ -328,4 +333,23 @@ std::vector<Segment2> ConvexShape2D::GetConvexSegments() const
 	}
 
 	return list;
+}
+
+bool ConvexShape2D::IsPointInsideShape(const Vec2& pos)
+{
+	std::vector<Plane2> plane = GetConvexPlanes();
+
+	for(int plane_idx = 0; plane_idx < static_cast<int>(plane.size()); ++plane_idx)
+	{
+		Vec2 closest_point = plane[plane_idx].ClosestPoint(pos);
+		Vec2 dir = closest_point - pos;
+		float compare = DotProduct(plane[plane_idx].m_normal, dir);
+
+		if (compare < 0.0f)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

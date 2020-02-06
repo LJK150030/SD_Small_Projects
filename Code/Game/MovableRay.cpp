@@ -105,6 +105,8 @@ void MovableRay::CollideWithConvexShape(const ConvexShape2D& shape)
 	Vec2 local_pos = shape_local.GetTransformPosition2D(m_segment.GetStart());
 	Vec2 local_dir = shape_local.GetTransformVector2D(m_ray.m_dir);
 
+	//if(m_segment.m_start)
+	
 	for(int plane_idx = 0; plane_idx < static_cast<int>(segments.size()); ++plane_idx)
 	{
 		float t_vals[2];
