@@ -13,11 +13,6 @@ ConvexShape2D::ConvexShape2D(Game* the_game): Entity(the_game)
 		g_randomNumberGenerator.GetRandomFloatInRange(m_minX, m_maxX),
 		g_randomNumberGenerator.GetRandomFloatInRange(m_minY, m_maxY));
 	
-	CPUMesh disc_mesh;
-	CpuMeshAddDisc(&disc_mesh, m_debugColor, 1.0f);
-	m_debugMesh = new GPUMesh(g_theRenderer);
-	m_debugMesh->CreateFromCPUMesh<Vertex_PCU>(disc_mesh); // we won't be updated this;
-
 	RandomCcwPoints(m_polygon.m_points);
 
 	int triangle_set = static_cast<int>(m_polygon.m_points.size()) - 2;
@@ -31,7 +26,7 @@ ConvexShape2D::ConvexShape2D(Game* the_game): Entity(the_game)
 			m_polygon.m_points[0],
 			m_polygon.m_points[convex_itr + 1],
 			m_polygon.m_points[convex_itr + 2],
-			Rgba::GREEN,
+			m_color,
 			convex_itr);
 	}
 
@@ -44,15 +39,37 @@ ConvexShape2D::~ConvexShape2D()
 {
 	delete m_mesh;
 	m_mesh = nullptr;
-	
-	delete m_debugMesh;
-	m_debugMesh = nullptr;
+
+	if(m_debugMesh)
+	{
+		delete m_debugMesh;
+		m_debugMesh = nullptr;
+	}
 }
 
 
 void ConvexShape2D::Update(float delta_seconds)
 {
 	UNUSED(delta_seconds);
+
+	if (m_debugMesh)
+	{
+		delete m_debugMesh;
+		m_debugMesh = nullptr;
+	}
+
+	Rgba color = m_debugColor;
+
+	if(m_collideThisFrame)
+	{
+		color = m_collideColor;
+	}
+	m_collideThisFrame = false;
+	
+	CPUMesh disc_mesh;
+	CpuMeshAddDisc(&disc_mesh, color, 1.0f);
+	m_debugMesh = new GPUMesh(g_theRenderer);
+	m_debugMesh->CreateFromCPUMesh<Vertex_PCU>(disc_mesh);
 }
 
 
@@ -70,7 +87,7 @@ void ConvexShape2D::Render() const
 		{
 			g_theRenderer->BindModelMatrix(model_matrix);
 			g_theRenderer->BindMaterial(*m_material);
-			g_theRenderer->DrawMesh(*m_debugMesh);		
+			g_theRenderer->DrawMesh(*m_debugMesh);
 		}
 	}
 }
@@ -102,6 +119,10 @@ bool ConvexShape2D::DestroyEntity()
 	return false;
 }
 
+bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
+{
+	return false;
+}
 
 void ConvexShape2D::RandomCcwPoints(std::vector<Vec2>& out) const
 {

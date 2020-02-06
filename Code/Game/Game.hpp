@@ -3,12 +3,13 @@
 #include "Engine/Math/Matrix44.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
 
-#include "Game/Entity.hpp"
+#include "Game/Point.hpp"
 
 class Camera;
 class Shader;
 class GPUMesh;
 class Material;
+class ConvexShape2D;
 
 class Game
 {
@@ -40,7 +41,10 @@ private:
 	void GarbageCollection() const;
 	void InitCamera();
 	void InitGameObjs();
+	void UpdateNumberOfShapes();
 
+	void MouseCollisionTest();
+	
 private:
 
 	bool m_inDevMode = false;
@@ -53,11 +57,14 @@ private:
 
 	Material* m_woodMaterial = nullptr;
 	Shader* m_defaultShader = nullptr;
-	GPUMesh* m_quad;
+	GPUMesh* m_quad{};
 	Matrix44 m_quadTransform = Matrix44::IDENTITY; // quad's model matrix
 
-	
 	Vec2 m_mousePos = Vec2::ZERO;
-
-	std::vector<Entity*> m_entities;
+	Point m_mouseEntity;
+	
+	std::vector<ConvexShape2D*> m_convexShapes;
+	int m_currentNumConvexShapes = 1;
+	const int MIN_SHAPES = 1;
+	const int MAX_SHAPES = 8'192;
 };

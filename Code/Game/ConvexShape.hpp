@@ -31,14 +31,24 @@ public:
 	void DrawEntity() const override;
 	bool DestroyEntity() override;
 
+	bool CollisionFromPoint(const Vec2& pos);
+	
 private:
 	void RandomCcwPoints(std::vector<Vec2>& out) const;
+	
 
 private:
 	ConvexHull2D		m_hull;
 	ConvexPolygon2D		m_polygon;
 
+	Rgba m_color = Rgba(0.0980392156862745f,
+		1.0000000000000000f,
+		0.0980392156862745f,
+		0.3200000000000000f);
+	
 	Rgba m_debugColor = Rgba(0.0f, 1.0f, 1.0f, 0.2f);
+	Rgba m_collideColor = Rgba(0.0f, 1.0f, 1.0f, 0.2f);
+	bool m_collideThisFrame = false;
 	
 	float m_minAngle = 10.0f;
 	float m_maxAngle = 170.0f;

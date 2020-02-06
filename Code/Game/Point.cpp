@@ -7,10 +7,10 @@
 
 Point::Point(Game* the_game): Entity(the_game)
 {
-	m_scale = 0.1f;
+	m_scale = 0.4f;
 
 	CPUMesh disc_mesh;
-	CpuMeshAddDisc(&disc_mesh, Rgba::CYAN, 1.0f);
+	CpuMeshAddDisc(&disc_mesh, Rgba(1.0f,0.0f, 0.5f, 1.0f), 1.0f);
 	m_mesh = new GPUMesh(g_theRenderer);
 	m_mesh->CreateFromCPUMesh<Vertex_PCU>(disc_mesh); // we won't be updated this;
 }

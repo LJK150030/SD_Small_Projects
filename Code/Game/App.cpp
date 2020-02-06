@@ -167,11 +167,6 @@ bool App::HandleKeyPressed(const unsigned char key_code)
 			m_isQuitting = true;
 		return true;
 
-	case F1_KEY:
-		if (!DEV_CONSOLE_IN_USE)
-			m_theGame->SetDeveloperMode(true);
-		return true;
-
 	case F8_KEY:
 		if (!DEV_CONSOLE_IN_USE)
 			HardRestart();
@@ -195,7 +190,8 @@ bool App::HandleKeyReleased(const unsigned char key_code)
 	switch (key_code)
 	{
 	case F1_KEY:
-		m_theGame->SetDeveloperMode(false);
+		if (!DEV_CONSOLE_IN_USE)
+			m_theGame->SetDeveloperMode(!m_theGame->InDeveloperMode());
 		return true;
 
 

@@ -81,3 +81,9 @@ constexpr float WORLD_CENTER_Y = 0.0f;
 const Vec2 WORLD_BL_CORNER(-0.5f * WORLD_WIDTH, -0.5f * WORLD_HEIGHT);
 const Vec2 WORLD_TR_CORNER(0.5f * WORLD_WIDTH, 0.5f * WORLD_HEIGHT);
 const AABB2 WORLD_BOUNDS(WORLD_BL_CORNER, WORLD_TR_CORNER);
+
+constexpr int MAX_SAMPLE = 128;
+extern int tick_idx;
+extern double tick_sum;
+extern double tick_list[MAX_SAMPLE];
+double CalcRollingAvgTick(double new_tick);
