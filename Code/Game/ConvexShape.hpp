@@ -15,11 +15,12 @@ struct ConvexHull2D
 	
 	ConvexHull2D(const ConvexPolygon2D& poly);
 	
-	void Update(const Vec2& mouse_position);
+	void Update(const Vec2& mouse_position, bool render_this_frame);
 	void DebugRender(const Matrix44& model_matrix) const;
 	
 	std::vector<Plane2> m_planes;
-	int	m_numPlanes;
+	int	m_numPlanes = 0;
+	bool m_renderFrame = false;
 	
 	std::vector<GPUMesh*> m_debugLineMeshList;
 	std::vector<GPUMesh*> m_debugPointMeshList;
@@ -94,5 +95,5 @@ private:
 	float m_minY = WORLD_BL_CORNER.y;
 	float m_maxY = WORLD_TR_CORNER.y;
 
-	Vec2 m_mouseLocalPos = Vec2::ZERO;
+	Vec2 m_pointLocalPos = Vec2::ZERO;
 };
