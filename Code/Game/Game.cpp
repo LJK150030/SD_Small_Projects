@@ -105,10 +105,12 @@ void Game::UpdateEntities(double delta_seconds)
 {
 	m_mouseEntity.Update(static_cast<float>(delta_seconds));
 	m_movableRay.Update(static_cast<float>(delta_seconds));
+	
 	MouseCollisionTest(m_selectedShapes);
 	
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 	{
+		m_movableRay.CollideWithConvexShape(*m_convexShapes[ent_idx]);
 		m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
 	}
 }

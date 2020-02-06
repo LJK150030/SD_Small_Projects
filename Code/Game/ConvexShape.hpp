@@ -2,6 +2,7 @@
 #include "Engine/Math/Plane2.hpp"
 
 #include "Game/Entity.hpp"
+#include "Game/GameCommon.hpp"
 
 #include <vector>
 
@@ -70,10 +71,11 @@ public:
 
 	bool CollisionFromPoint(const Vec2& pos);
 
-	void	AddRotationDegrees(float degrees);
-	void	AddScalarValue(float scale);
+	void AddRotationDegrees(float degrees);
+	void AddScalarValue(float scale);
 
-	
+	std::vector<Plane2> GetConvexPlanes() const;
+	std::vector<Vec2> GetConvexPoints() const;
 
 private:
 	ConvexHull2D		m_hull;

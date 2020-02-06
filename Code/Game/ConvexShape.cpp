@@ -306,3 +306,13 @@ void ConvexShape2D::AddScalarValue(float scale)
 {
 	m_scale = ClampFloat(m_scale + scale, MIN_SIZE, MAX_SIZE);
 }
+
+std::vector<Plane2> ConvexShape2D::GetConvexPlanes() const
+{
+	return m_hull.m_planes;
+}
+
+std::vector<Vec2> ConvexShape2D::GetConvexPoints() const
+{
+	return m_polygon.m_points;
+}
