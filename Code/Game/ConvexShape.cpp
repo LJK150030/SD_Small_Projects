@@ -105,6 +105,7 @@ void ConvexHull2D::Update(const Vec2& mouse_position, bool render_this_frame)
 	}
 }
 
+
 void ConvexHull2D::DebugRender(const Matrix44& model_matrix) const
 {
 	if(m_renderFrame)
@@ -131,12 +132,13 @@ void ConvexHull2D::DebugRender(const Matrix44& model_matrix) const
 
 ConvexPolygon2D::ConvexPolygon2D()
 {
+	m_points = std::vector<Vec2>();
+	RandomCcwPoints(m_points);
 }
 
 
-ConvexPolygon2D::~ConvexPolygon2D()
-{
-}
+ConvexPolygon2D::~ConvexPolygon2D() = default;
+
 
 ConvexPolygon2D::ConvexPolygon2D(const ConvexHull2D& hull)
 {
@@ -145,17 +147,36 @@ ConvexPolygon2D::ConvexPolygon2D(const ConvexHull2D& hull)
 }
 
 
+void ConvexPolygon2D::RandomCcwPoints(std::vector<Vec2>& out) const
+{
+	out.clear();
+
+	float rotation_degrees = 0.0f;
+
+	while (rotation_degrees < 360.0f)
+	{
+		Vec2 start(1.0f, 0.0f);
+		start.SetAngleDegrees(rotation_degrees);
+		start.Normalize();
+		out.emplace_back(start);
+
+		const float add_rot = g_randomNumberGenerator.GetRandomFloatInRange(MIN_RNG_ANGLE, MAX_RNG_ANGLE);
+		rotation_degrees += add_rot;
+	}
+}
+
+
 //--------------------------------------------------------------------
 
 
 ConvexShape2D::ConvexShape2D(Game* the_game): Entity(the_game)
 {
-	m_scale = g_randomNumberGenerator.GetRandomFloatInRange(m_minSize, m_maxSize);
+	m_scale = g_randomNumberGenerator.GetRandomFloatInRange(MIN_SIZE, MAX_SIZE);
 	m_position = Vec2(
 		g_randomNumberGenerator.GetRandomFloatInRange(m_minX, m_maxX),
-		g_randomNumberGenerator.GetRandomFloatInRange(m_minY, m_maxY));
+		g_randomNumberGenerator.GetRandomFloatInRange(m_minY, m_maxY)
+	);
 	
-	RandomCcwPoints(m_polygon.m_points);
 	m_hull = m_polygon;
 
 	int triangle_set = static_cast<int>(m_polygon.m_points.size()) - 2;
@@ -276,20 +297,12 @@ bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
 	return 	m_collideThisFrame;
 }
 
-void ConvexShape2D::RandomCcwPoints(std::vector<Vec2>& out) const
+void ConvexShape2D::AddRotationDegrees(float degrees)
 {
-	out.clear();
+	m_orientationDegrees = ModFloatPositive(m_orientationDegrees + degrees, 360.0f);
+}
 
-	float rotation_degrees = 0.0f;
-
-	while(rotation_degrees < 360.0f)
-	{
-		Vec2 start(1.0f, 0.0f);
-		start.SetAngleDegrees(rotation_degrees);
-		start.Normalize();
-		out.emplace_back(start);
-
-		const float add_rot = g_randomNumberGenerator.GetRandomFloatInRange(m_minAngle, m_maxAngle);
-		rotation_degrees += add_rot;
-	}
+void ConvexShape2D::AddScalarValue(float scale)
+{
+	m_scale = ClampFloat(m_scale + scale, MIN_SIZE, MAX_SIZE);
 }

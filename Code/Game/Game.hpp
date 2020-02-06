@@ -2,6 +2,7 @@
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Matrix44.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
+#include "Engine/Math/Segment2.hpp"
 
 #include "Game/Point.hpp"
 
@@ -43,7 +44,7 @@ private:
 	void InitGameObjs();
 	void UpdateNumberOfShapes();
 
-	void MouseCollisionTest();
+	void MouseCollisionTest(std::vector<ConvexShape2D*>& out);
 	
 private:
 
@@ -62,9 +63,12 @@ private:
 
 	Vec2 m_mousePos = Vec2::ZERO;
 	Point m_mouseEntity;
-	
+
 	std::vector<ConvexShape2D*> m_convexShapes;
+	std::vector<ConvexShape2D*> m_selectedShapes;
 	int m_currentNumConvexShapes = 1;
 	const int MIN_SHAPES = 1;
 	const int MAX_SHAPES = 8'192;
+
+	bool m_sceneUpdated = false;
 };

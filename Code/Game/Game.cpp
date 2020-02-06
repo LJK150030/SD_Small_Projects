@@ -98,16 +98,17 @@ void Game::Update(const double delta_seconds)
 	m_mousePos = g_theWindow->GetMousePosition(WORLD_BOUNDS);
 
 	UpdateEntities(delta_seconds);
+	m_sceneUpdated = false;
 }
 
 void Game::UpdateEntities(double delta_seconds)
 {
-	m_mouseEntity.Update(delta_seconds);
-	MouseCollisionTest();
+	m_mouseEntity.Update(static_cast<float>(delta_seconds));
+	MouseCollisionTest(m_selectedShapes);
 	
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 	{
-		m_convexShapes[ent_idx]->Update(delta_seconds);
+		m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
 	}
 }
 
@@ -154,8 +155,51 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 {
 	switch (key_code)
 	{
+		//updating shape
+		case A_KEY: // rotate CCW
+		{
+			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
+			{
+				m_selectedShapes[hover_id]->AddRotationDegrees(-5.0f);
+			}
+
+			m_sceneUpdated = true;
+			break;
+		}
+		case S_KEY: // rotate CW
+		{
+			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
+			{
+				m_selectedShapes[hover_id]->AddRotationDegrees(5.0f);
+			}
+
+			m_sceneUpdated = true;
+			break;
+		}
+		case Z_KEY: // rotate CCW
+		{
+			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
+			{
+				m_selectedShapes[hover_id]->AddScalarValue(-1.0f);
+			}
+
+			m_sceneUpdated = true;
+			break;
+		}
+		case X_KEY: // rotate CW
+		{
+			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
+			{
+				m_selectedShapes[hover_id]->AddScalarValue(1.0f);
+			}
+
+			m_sceneUpdated = true;
+			break;
+		}
 		default:
-			return false;
+		{
+			return false;\
+		}
 	}
 
 	return true;
@@ -166,6 +210,8 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 {
 	switch (key_code)
 	{
+		//--------------------------------------
+		//updating quantity
 		case Q_KEY: // half the number of shapes
 		{
 			m_currentNumConvexShapes = ClampInt(
@@ -175,9 +221,10 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 			);
 
 			UpdateNumberOfShapes();
+			m_sceneUpdated = true;
 			break;
 		}
-		case W_KEY:
+		case W_KEY: // double the number of shapes
 		{
 			m_currentNumConvexShapes = ClampInt(
 				m_currentNumConvexShapes * 2,
@@ -186,8 +233,10 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 			);
 
 			UpdateNumberOfShapes();
+			m_sceneUpdated = true;
 			break;
 		}
+		
 		default:
 		{
 			return false;
@@ -277,12 +326,17 @@ void Game::UpdateNumberOfShapes()
 
 }
 
-void Game::MouseCollisionTest()
+void Game::MouseCollisionTest(std::vector<ConvexShape2D*>& out)
 {
+	out.clear();
+	
 	//TODO: from naive attempt to Space partitioning
 	for(int shape_idx = 0; shape_idx < static_cast<int>(m_convexShapes.size()); ++shape_idx)
 	{
-		m_convexShapes[shape_idx]->CollisionFromPoint(m_mousePos);
+		if(m_convexShapes[shape_idx]->CollisionFromPoint(m_mousePos))
+		{
+			out.push_back(m_convexShapes[shape_idx]);
+		}
 	}
 	
 	

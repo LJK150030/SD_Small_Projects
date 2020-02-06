@@ -10,6 +10,11 @@ struct ConvexPolygon2D;
 
 struct ConvexHull2D
 {
+public:
+	std::vector<Plane2> m_planes;
+	int	m_numPlanes = 0;
+
+public:
 	ConvexHull2D();
 	~ConvexHull2D();
 	
@@ -17,9 +22,8 @@ struct ConvexHull2D
 	
 	void Update(const Vec2& mouse_position, bool render_this_frame);
 	void DebugRender(const Matrix44& model_matrix) const;
-	
-	std::vector<Plane2> m_planes;
-	int	m_numPlanes = 0;
+
+private:
 	bool m_renderFrame = false;
 	
 	std::vector<GPUMesh*> m_debugLineMeshList;
@@ -31,12 +35,21 @@ struct ConvexHull2D
 
 struct ConvexPolygon2D
 {
+public:
+	std::vector<Vec2> m_points; //in counter_clockwise order
+	
+public:
 	ConvexPolygon2D();
 	~ConvexPolygon2D();
 
 	explicit ConvexPolygon2D(const ConvexHull2D& hull);
 
-	std::vector<Vec2> m_points; //in counter_clockwise order
+private:
+	void RandomCcwPoints(std::vector<Vec2>& out) const;
+	
+private:
+	const float MIN_RNG_ANGLE = 10.0f;
+	const float MAX_RNG_ANGLE = 170.0f;
 };
 
 //--------------------------------------------------------------------
@@ -56,9 +69,10 @@ public:
 	bool DestroyEntity() override;
 
 	bool CollisionFromPoint(const Vec2& pos);
-	
-private:
-	void RandomCcwPoints(std::vector<Vec2>& out) const;
+
+	void	AddRotationDegrees(float degrees);
+	void	AddScalarValue(float scale);
+
 	
 
 private:
@@ -86,10 +100,9 @@ private:
 	
 	bool m_collideThisFrame = false;
 	
-	float m_minAngle = 10.0f;
-	float m_maxAngle = 170.0f;
-	float m_minSize = 5.0f;
-	float m_maxSize = 15.0f;
+	const float MIN_SIZE = 5.0f;
+	const float MAX_SIZE = 15.0f;
+	
 	float m_minX = WORLD_BL_CORNER.x;
 	float m_maxX = WORLD_TR_CORNER.x;
 	float m_minY = WORLD_BL_CORNER.y;
