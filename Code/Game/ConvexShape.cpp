@@ -290,13 +290,14 @@ bool ConvexShape2D::DestroyEntity()
 bool ConvexShape2D::CollisionFromPoint(const Vec2& pos)
 {
 	m_collideThisFrame = IsPointInDisc2D(pos, m_position, m_scale);
+	
 	Matrix44 model_matrix = GetModelMatrix();
 	model_matrix = model_matrix.GetInverseMatrix();
 	m_pointLocalPos = model_matrix.GetTransformPosition2D(pos);
 
 	if(m_collideThisFrame)
 	{
-		m_collideThisFrame = IsPointInsideShape(m_pointLocalPos);
+		m_collideThisFrame = IsPointInsideShape(pos);
 	}
 	
 	return 	m_collideThisFrame;
@@ -335,15 +336,45 @@ std::vector<Segment2> ConvexShape2D::GetConvexSegments() const
 	return list;
 }
 
-bool ConvexShape2D::IsPointInsideShape(const Vec2& pos)
+bool ConvexShape2D::IsPointInsideShape(const Vec2& pos) const
 {
+	Matrix44 shape_local = GetModelMatrix().GetInverseMatrix();
+	Vec2 local_pos = shape_local.GetTransformPosition2D(pos);
+
 	std::vector<Plane2> plane = GetConvexPlanes();
 
 	for(int plane_idx = 0; plane_idx < static_cast<int>(plane.size()); ++plane_idx)
 	{
-		Vec2 closest_point = plane[plane_idx].ClosestPoint(pos);
-		Vec2 dir = closest_point - pos;
+		Vec2 closest_point = plane[plane_idx].ClosestPoint(local_pos);
+		Vec2 dir = closest_point - local_pos;
 		float compare = DotProduct(plane[plane_idx].m_normal, dir);
+
+		if (compare < 0.0f)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool ConvexShape2D::IsPointInsideShapeIgnorePlane(const Vec2& pos, int plane_idx) const
+{
+	Matrix44 shape_local = GetModelMatrix().GetInverseMatrix();
+	Vec2 local_pos = shape_local.GetTransformPosition2D(pos);
+
+	std::vector<Plane2> plane = GetConvexPlanes();
+
+	for (int idx = 0; idx < static_cast<int>(plane.size()); ++idx)
+	{
+		if(idx == plane_idx)
+		{
+			continue;
+		}
+		
+		Vec2 closest_point = plane[idx].ClosestPoint(local_pos);
+		Vec2 dir = closest_point - local_pos;
+		float compare = DotProduct(plane[idx].m_normal, dir);
 
 		if (compare < 0.0f)
 		{

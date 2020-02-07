@@ -74,7 +74,8 @@ public:
 	void AddRotationDegrees(float degrees);
 	void AddScalarValue(float scale);
 
-	bool IsPointInsideShape(const Vec2& pos);
+	bool IsPointInsideShape(const Vec2& pos) const;
+	bool IsPointInsideShapeIgnorePlane(const Vec2& pos, int plane_idx) const;
 
 	std::vector<Plane2> GetConvexPlanes() const;
 	std::vector<Vec2> GetConvexPoints() const;

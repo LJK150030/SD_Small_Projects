@@ -22,11 +22,14 @@ public:
 
 	void SetStart(const Vec2& pos);
 	void SetEnd(const Vec2& pos);
+	void SetEnd(float ray_t_val);
 
-	void CollideWithConvexShape(const ConvexShape2D& shape);
+	void PreUpdate();
+	bool CollideWithConvexShape(float* out, const ConvexShape2D& shape);
 
 private:
 	void ConstructArrow();
+	bool CollideWithDisk(const ConvexShape2D& shape);
 	
 private:
 	Segment2 m_segment;
@@ -34,4 +37,6 @@ private:
 
 	Rgba m_rayCastColor = Rgba::MAGENTA;
 	Rgba m_segmentColor = Rgba::GRAY;
+
+	bool m_hitThisFrame = false;
 };

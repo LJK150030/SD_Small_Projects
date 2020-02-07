@@ -104,15 +104,33 @@ void Game::Update(const double delta_seconds)
 void Game::UpdateEntities(double delta_seconds)
 {
 	m_mouseEntity.Update(static_cast<float>(delta_seconds));
-	m_movableRay.Update(static_cast<float>(delta_seconds));
+	m_movableRay.PreUpdate();
 	
 	MouseCollisionTest(m_selectedShapes);
 	
+	float smallest_contact_point = INFINITY;
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 	{
-		m_movableRay.CollideWithConvexShape(*m_convexShapes[ent_idx]);
 		m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
+		
+		float t_val[] = {0.0f};
+		const bool hit = m_movableRay.CollideWithConvexShape(t_val, *m_convexShapes[ent_idx]);
+
+		if(hit)
+		{
+			if(smallest_contact_point > t_val[0])
+			{
+				smallest_contact_point = t_val[0];
+			}
+		}
 	}
+
+	if(smallest_contact_point != INFINITY)
+	{
+		m_movableRay.SetEnd(smallest_contact_point);
+	}
+	
+	m_movableRay.Update(static_cast<float>(delta_seconds));
 }
 
 
