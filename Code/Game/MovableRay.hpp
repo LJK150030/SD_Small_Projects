@@ -32,11 +32,21 @@ private:
 	bool CollideWithDisk(const ConvexShape2D& shape);
 	
 private:
-	Segment2 m_segment;
+	Segment2 m_raySegment;
 	Ray2 m_ray;
+	
+	Segment2 m_debugSegment;
+	
+	Segment2 m_reflectingRaySegment;
+	Ray2 m_reflectingRay;
 
 	Rgba m_rayCastColor = Rgba::MAGENTA;
 	Rgba m_segmentColor = Rgba::GRAY;
+	Rgba m_reflectColor = Rgba::RED;
 
 	bool m_hitThisFrame = false;
+
+	GPUMesh* m_reflectingMesh = nullptr;
+	Vec2 m_reflectingPos;
+	float m_reflectingOrientationDeg;
 };

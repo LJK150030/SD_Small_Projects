@@ -6,6 +6,7 @@
 
 #include "Game/Point.hpp"
 #include "Game/MovableRay.hpp"
+#include "Game/BSPTree.hpp"
 
 class Camera;
 class Shader;
@@ -72,5 +73,8 @@ private:
 	const int MIN_SHAPES = 1;
 	const int MAX_SHAPES = 8'192;
 
-	bool m_sceneUpdated = false;
+	BSPTree m_bspTree;
+	bool	m_bspSet = false;
+	bool	m_sceneUpdated = false;
+
 };

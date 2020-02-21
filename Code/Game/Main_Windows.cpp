@@ -8,7 +8,7 @@
 
 #include "ThirdParty/imGUI/imgui.h"
 
-#define WINDOW_TITLE "Protogame3D"
+#define WINDOW_TITLE "SD4 assignments"
 
 
 extern App* g_theApp = nullptr;

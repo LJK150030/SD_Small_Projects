@@ -5,12 +5,14 @@
 
 MovableRay::MovableRay(Game* the_game): Entity(the_game)
 {
-	m_segment.SetStart(Vec2(25.0f, 25.0f));
-	m_segment.SetEnd(Vec2(26.0f, 25.0f));
+	m_raySegment.SetStart(Vec2(25.0f, 25.0f));
+	m_raySegment.SetEnd(Vec2(26.0f, 25.0f));
+	m_debugSegment.SetStart(Vec2(25.0f, 25.0f));
+	m_debugSegment.SetEnd(Vec2(26.0f, 25.0f));
 	m_ray = Ray2::FromPoints(Vec2(25.0f, 25.0f), Vec2(26.0f, 25.0f));
 	
-	m_position = m_segment.GetCenter();
-	m_orientationDegrees = m_segment.GetRotation();
+	m_position = m_raySegment.GetCenter();
+	m_orientationDegrees = m_raySegment.GetRotation();
 	m_scale = 0.50f;
 
 	m_material = g_theRenderer->CreateOrGetMaterial("white.mat");
@@ -24,6 +26,18 @@ MovableRay::~MovableRay()
 		delete m_mesh;
 		m_mesh = nullptr;
 	}
+
+	if(m_debugMesh)
+	{
+		delete m_debugMesh;
+		m_debugMesh = nullptr;
+	}
+
+	if (m_reflectingMesh)
+	{
+		delete m_reflectingMesh;
+		m_reflectingMesh = nullptr;
+	}
 }
 
 
@@ -35,10 +49,29 @@ void MovableRay::Update(float delta_seconds)
 		m_mesh = nullptr;
 	}
 
+	if (m_debugMesh)
+	{
+		delete m_debugMesh;
+		m_debugMesh = nullptr;
+	}
+
+	if (m_reflectingMesh)
+	{
+		delete m_reflectingMesh;
+		m_reflectingMesh = nullptr;
+	}
+
 	//hand drawing the line in world space
-	m_position = m_segment.GetCenter();
-	m_orientationDegrees = m_segment.GetRotation();
-	m_ray = Ray2::FromPoints(m_segment.m_start, m_segment.m_end);
+	m_position = m_raySegment.GetCenter();
+	m_orientationDegrees = m_raySegment.GetRotation();
+	m_ray = Ray2::FromPoints(m_raySegment.m_start, m_raySegment.m_end);
+
+	if(m_hitThisFrame)
+	{
+		m_reflectingRaySegment = Segment2(m_reflectingRay.m_pos, m_reflectingRay.PointAtTime(10.0f));
+		m_reflectingPos = m_reflectingRaySegment.GetCenter();
+		m_reflectingOrientationDeg = m_reflectingRaySegment.GetRotation();
+	}
 
 	ConstructArrow();
 }
@@ -53,8 +86,14 @@ void MovableRay::Render() const
 
 		g_theRenderer->BindModelMatrix(model_matrix);
 		g_theRenderer->BindMaterial(*m_material);
-		g_theRenderer->DrawMesh(*m_mesh);
 
+		if (m_hitThisFrame)
+		{
+ 			g_theRenderer->DrawMesh(*m_debugMesh);
+ 			g_theRenderer->DrawMesh(*m_reflectingMesh);
+		}
+		
+		g_theRenderer->DrawMesh(*m_mesh);
 	}
 }
 
@@ -88,27 +127,32 @@ bool MovableRay::DestroyEntity()
 
 void MovableRay::SetStart(const Vec2& pos)
 {
-	m_segment.m_start = pos;
+	m_raySegment.m_start = pos;
+	m_debugSegment.m_start = pos;
 }
 
 
 void MovableRay::SetEnd(const Vec2& pos)
 {
-	m_segment.m_end = pos;
+	m_raySegment.m_end = pos;
+	m_debugSegment.m_end = pos;
 }
 
 
 void MovableRay::SetEnd(const float ray_t_val)
 {
-	m_segment.m_end = m_ray.PointAtTime(ray_t_val);
+	m_raySegment.m_end = m_ray.PointAtTime(ray_t_val);
+	
+	float diff_time = Abs(m_debugSegment.GetLength() - ray_t_val);
+	m_debugSegment.m_end = m_ray.PointAtTime(m_raySegment.GetLength() + diff_time);
 }
 
 
 void MovableRay::PreUpdate()
 {
-	m_position = m_segment.GetCenter();
-	m_orientationDegrees = m_segment.GetRotation();
-	m_ray = Ray2::FromPoints(m_segment.m_start, m_segment.m_end);
+	m_position = m_raySegment.GetCenter();
+	m_orientationDegrees = m_raySegment.GetRotation();
+	m_ray = Ray2::FromPoints(m_raySegment.m_start, m_raySegment.m_end);
 	m_hitThisFrame = false;
 }
 
@@ -116,12 +160,16 @@ void MovableRay::PreUpdate()
 
 bool MovableRay::CollideWithConvexShape(float* out, const ConvexShape2D& shape)
 {
-	std::vector<Plane2> planes = shape.GetConvexPlanes();
+	std::vector<Plane2> planes = shape.GetLocalConvexPlanes();
 
 	//early out inside
 	if(shape.IsPointInsideShape(m_ray.m_pos))
 	{
 		out[0] = 0.01f;
+
+		m_reflectingRay = m_ray;
+
+		m_hitThisFrame = true;
 		return true;
 	}
 
@@ -160,13 +208,18 @@ bool MovableRay::CollideWithConvexShape(float* out, const ConvexShape2D& shape)
  		if(plane_intersection_idx >= 0)
  		{
  			Vec2 contact_point = m_ray.PointAtTime(largest_t_val);
- 			if(shape.IsPointInsideShapeIgnorePlane(contact_point, plane_intersection_idx))
- 			{
-				const float segment_end_t_value = m_segment.GetLength();
+			if (shape.IsPointInsideShapeIgnorePlane(contact_point, plane_intersection_idx))
+			{
+				const float segment_end_t_value = m_raySegment.GetLength();
 
- 				out[0] = ClampFloat(largest_t_val, 0.0f, segment_end_t_value);
+				out[0] = ClampFloat(largest_t_val, 0.0f, segment_end_t_value);
+
+				Vec2 ref_dir = ReflectVectorOffSurfaceNormal(m_ray.m_dir, planes[plane_intersection_idx].m_normal);
+				m_reflectingRay = Ray2(contact_point, ref_dir);
+
+				m_hitThisFrame = true;
 				return true;
- 			}
+			}
  		}
 
 	}
@@ -193,9 +246,20 @@ bool MovableRay::CollideWithDisk(const ConvexShape2D& shape)
 void MovableRay::ConstructArrow()
 {
 	CPUMesh arrow_mesh;
-	CpuMeshAddArrow(&arrow_mesh, m_rayCastColor, m_segment.m_start, m_segment.m_end, 0.25f);
+	CpuMeshAddArrow(&arrow_mesh, m_rayCastColor, m_raySegment.m_start, m_raySegment.m_end, 0.25f);
 	m_mesh = new GPUMesh(g_theRenderer);
-	m_mesh->CreateFromCPUMesh<Vertex_PCU>(arrow_mesh); // we won't be updated this
+	m_mesh->CreateFromCPUMesh<Vertex_PCU>(arrow_mesh);
+
+	if(m_hitThisFrame)
+	{
+		CpuMeshAddArrow(&arrow_mesh, m_segmentColor, m_debugSegment.m_start, m_debugSegment.m_end, 0.25f);
+		m_debugMesh = new GPUMesh(g_theRenderer);
+		m_debugMesh->CreateFromCPUMesh<Vertex_PCU>(arrow_mesh);
+
+		CpuMeshAddArrow(&arrow_mesh, m_reflectColor, m_reflectingRaySegment.m_start, m_reflectingRaySegment.m_end, 0.25f);
+		m_reflectingMesh = new GPUMesh(g_theRenderer);
+		m_reflectingMesh->CreateFromCPUMesh<Vertex_PCU>(arrow_mesh);
+	}
 }
 
 

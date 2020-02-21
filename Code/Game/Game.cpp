@@ -15,6 +15,7 @@
 #include "Game/GameCommon.hpp"
 #include "Game/Point.hpp"
 #include "Game/ConvexShape.hpp"
+#include "Game/BSPTree.hpp"
 
 #include <vector>
 
@@ -62,7 +63,6 @@ void Game::Startup()
 
 void Game::Shutdown()
 {
-
 	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 	{
 		delete m_convexShapes[ent_idx];
@@ -98,7 +98,11 @@ void Game::Update(const double delta_seconds)
 	m_mousePos = g_theWindow->GetMousePosition(WORLD_BOUNDS);
 
 	UpdateEntities(delta_seconds);
-	m_sceneUpdated = false;
+
+	if(m_sceneUpdated)
+	{
+		m_bspSet = false;
+	}
 }
 
 void Game::UpdateEntities(double delta_seconds)
@@ -149,6 +153,12 @@ void Game::Render() const
 	g_theRenderer->ClearDepthStencilTarget(1.0f);
 
 	RenderEntities();
+
+	if(m_bspSet)
+	{
+		m_bspTree.Render();
+	}
+	
 	g_imGUI->Render();
 
 	g_theRenderer->EndCamera(m_gameCamera);
@@ -268,6 +278,13 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 
 			UpdateNumberOfShapes();
 			m_sceneUpdated = true;
+			break;
+		}
+		case F2_KEY:
+		{
+			m_bspTree.BuildBspTree(HEURISTIC_RANDOM, m_convexShapes);
+			m_sceneUpdated = false;
+			m_bspSet = true;
 			break;
 		}
 		

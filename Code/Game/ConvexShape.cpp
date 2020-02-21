@@ -313,24 +313,42 @@ void ConvexShape2D::AddScalarValue(float scale)
 	m_scale = ClampFloat(m_scale + scale, MIN_SIZE, MAX_SIZE);
 }
 
-std::vector<Plane2> ConvexShape2D::GetConvexPlanes() const
+std::vector<Plane2> ConvexShape2D::GetLocalConvexPlanes() const
 {
 	return m_hull.m_planes;
 }
 
-std::vector<Vec2> ConvexShape2D::GetConvexPoints() const
+std::vector<Vec2> ConvexShape2D::GetLocalConvexPoints() const
 {
 	return m_polygon.m_points;
 }
 
-std::vector<Segment2> ConvexShape2D::GetConvexSegments() const
+std::vector<Segment2> ConvexShape2D::GetLocalConvexSegments() const
 {
 	std::vector<Segment2> list;
-	int num_points = static_cast<int>(m_polygon.m_points.size());
+	const int num_points = static_cast<int>(m_polygon.m_points.size());
 
 	for(int point_idx = 0; point_idx < num_points; ++point_idx)
 	{
-		list.push_back(Segment2(m_polygon.m_points[point_idx], m_polygon.m_points[(point_idx + 1)%num_points]));
+		list.emplace_back(m_polygon.m_points[point_idx], m_polygon.m_points[(point_idx + 1)%num_points]);
+	}
+
+	return list;
+}
+
+
+std::vector<Segment2> ConvexShape2D::GetWorldConvexSegments() const
+{
+	std::vector<Segment2> list;
+	const int num_points = static_cast<int>(m_polygon.m_points.size());
+
+	for (int point_idx = 0; point_idx < num_points; ++point_idx)
+	{
+		Matrix44 model_matrix = GetModelMatrix();
+		Vec2 start = model_matrix.GetTransformPosition2D(m_polygon.m_points[point_idx]);
+		Vec2 end = model_matrix.GetTransformPosition2D(m_polygon.m_points[(point_idx + 1) % num_points]);
+		
+		list.emplace_back(start, end);
 	}
 
 	return list;
@@ -341,7 +359,7 @@ bool ConvexShape2D::IsPointInsideShape(const Vec2& pos) const
 	Matrix44 shape_local = GetModelMatrix().GetInverseMatrix();
 	Vec2 local_pos = shape_local.GetTransformPosition2D(pos);
 
-	std::vector<Plane2> plane = GetConvexPlanes();
+	std::vector<Plane2> plane = GetLocalConvexPlanes();
 
 	for(int plane_idx = 0; plane_idx < static_cast<int>(plane.size()); ++plane_idx)
 	{
@@ -363,7 +381,7 @@ bool ConvexShape2D::IsPointInsideShapeIgnorePlane(const Vec2& pos, int plane_idx
 	Matrix44 shape_local = GetModelMatrix().GetInverseMatrix();
 	Vec2 local_pos = shape_local.GetTransformPosition2D(pos);
 
-	std::vector<Plane2> plane = GetConvexPlanes();
+	std::vector<Plane2> plane = GetLocalConvexPlanes();
 
 	for (int idx = 0; idx < static_cast<int>(plane.size()); ++idx)
 	{

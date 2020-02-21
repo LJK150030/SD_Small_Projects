@@ -77,9 +77,12 @@ public:
 	bool IsPointInsideShape(const Vec2& pos) const;
 	bool IsPointInsideShapeIgnorePlane(const Vec2& pos, int plane_idx) const;
 
-	std::vector<Plane2> GetConvexPlanes() const;
-	std::vector<Vec2> GetConvexPoints() const;
-	std::vector<Segment2> GetConvexSegments() const;
+	std::vector<Plane2> GetLocalConvexPlanes() const;
+	std::vector<Vec2> GetLocalConvexPoints() const;
+	std::vector<Segment2> GetLocalConvexSegments() const;
+
+	std::vector<Segment2> GetWorldConvexSegments() const;
+
 
 private:
 	ConvexHull2D		m_hull;
