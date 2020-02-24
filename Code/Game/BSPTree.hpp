@@ -6,6 +6,8 @@
 
 #include <vector>
 
+struct Ray2;
+
 enum PointType
 {
 	POINT_BEHIND,
@@ -40,6 +42,7 @@ struct BSPNode
 	~BSPNode();
 
 	Plane2 m_split;
+	Segment2 m_segment;
 	int m_parentIdx = -1;
 	int m_backChildIdx = -1;
 	int m_frontChildIdx = -1;
@@ -56,7 +59,8 @@ public:
 	~BSPTree();
 
 	void BuildBspTree(BspHeuristic plane_selection, const std::vector<ConvexShape2D*>& geometry_list);
-
+	bool CanSee(const Vec2& in_start, const Vec2& in_end, Vec2& out_end);
+	
 	void Render() const;
 	
 	void Clear();
@@ -66,18 +70,21 @@ private:
 	PointType	ClassifyPoint(const Vec2& point, const Plane2& plane);
 	SegmentType	ClassifySegment(const Segment2& shape, const Plane2& plane);
 	int			SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int parent_idx);
-
+	void		RenderNode(int current_node_idx) const;
+	bool		CanSee(const Vec2& start, const Vec2& end, Vec2& out_end, int current_node_idx);
+	
 	//mutators
 	void	BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_index_list, int parent_idx);
 	void	SplitPolygon(const Segment2& shape, const Plane2& plane, int& out_back_shape_idx, int& out_front_shape_idx);
-	
+		
 	void	WalkTreeInOrder(int current_node_idx);
 	void	WalkTreePreOrder(int current_node_idx);
-	void	WalkTreePostOrder(int current_node_idx);
+	void	RenderLowestNodes(int current_node_idx) const;
+	void	SettingSpaceTypes(int current_node_idx);
 
 	void	SetMesh(int current_node_idx);
 	void	SetType(int current_node_idx);
-	void	RenderNode(int current_node_idx) const;
+	bool	GetIntersection(const Vec2& start, const Vec2& end, const Plane2& plane, Vec2& intersection, float& t);
 	
 private:
 	std::vector<BSPNode> m_bspTree;
@@ -85,5 +92,6 @@ private:
 	BspHeuristic m_heuristicType = HEURISTIC_RANDOM;
 
 	Material* m_material = nullptr;
+	
 };
 

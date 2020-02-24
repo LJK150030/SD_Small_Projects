@@ -24,6 +24,9 @@ public:
 	void SetEnd(const Vec2& pos);
 	void SetEnd(float ray_t_val);
 
+	Vec2 GetStart() const;
+	Vec2 GetEnd() const;
+
 	void PreUpdate();
 	bool CollideWithConvexShape(float* out, const ConvexShape2D& shape);
 

@@ -65,15 +65,22 @@ void BSPTree::BuildBspTree(BspHeuristic plane_selection, const std::vector<Conve
 	m_sceneSegments.clear();
 
 	//walk the tree to add rendering objs
-	//WalkTreePreOrder(0);
+	WalkTreePreOrder(0);
 	
 	//walk the tree to set the type
-	WalkTreePostOrder(0);
+	SettingSpaceTypes(0);
 }
+
+bool BSPTree::CanSee(const Vec2& start, const Vec2& end, Vec2& out_end)
+{
+	const bool result = CanSee(start, end, out_end, 0);
+	return result;
+}
+
 
 void BSPTree::Render() const
 {
-	//WalkTreePostOrder(0);
+	RenderLowestNodes(0);
 }
 
 
@@ -87,6 +94,8 @@ void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_
 	const Segment2 best_split = m_sceneSegments[best_world_split_idx];
 	const Plane2 split(best_split.m_start, best_split.m_end);
 	m_bspTree[current_node_idx].m_split = split;
+	m_bspTree[current_node_idx].m_segment = best_split;
+	
 
 	const int max_segments = static_cast<int>(seg_index_list.size());
 	for(int seg_idx = 0; seg_idx < max_segments; ++seg_idx)
@@ -350,29 +359,48 @@ void BSPTree::WalkTreePreOrder(int current_node_idx)
 }
 
 
-void BSPTree::WalkTreePostOrder(int current_node_idx)
+void BSPTree::SettingSpaceTypes(int current_node_idx)
 {
 	BSPNode& current_node = m_bspTree[current_node_idx];
 
 
 	if (current_node.m_backChildIdx != -1)
 	{
-		WalkTreePostOrder(current_node.m_backChildIdx);
+		SettingSpaceTypes(current_node.m_backChildIdx);
 	}
 
 	if (current_node.m_frontChildIdx != -1)
 	{
-		WalkTreePostOrder(current_node.m_frontChildIdx);
+		SettingSpaceTypes(current_node.m_frontChildIdx);
 	}
 
 	SetType(current_node_idx);
 }
 
 
+void BSPTree::RenderLowestNodes(int current_node_idx) const
+{
+	BSPNode current_node = m_bspTree[current_node_idx];
+
+
+	if (current_node.m_backChildIdx != -1)
+	{
+		RenderLowestNodes(current_node.m_backChildIdx);
+	}
+
+	if (current_node.m_frontChildIdx != -1)
+	{
+		RenderLowestNodes(current_node.m_frontChildIdx);
+	}
+
+	RenderNode(current_node_idx);
+}
+
 void BSPTree::SetMesh(int current_node_idx)
 {
 	BSPNode& current_node = m_bspTree[current_node_idx];
-	int hue_step = 45;
+	int hue_step = 50;
+	float line_thickness = 0.32f;
 	
 	std::vector<int> ancestry_idx = std::vector<int>();
 	int parent_idx = current_node.m_parentIdx;
@@ -385,7 +413,7 @@ void BSPTree::SetMesh(int current_node_idx)
 
 	int num_ancestors = static_cast<int>(ancestry_idx.size());
 	
-	if(num_ancestors > 2)
+	if(num_ancestors >= 2)
 	{
 		if (current_node.m_isLeaf)
 		{
@@ -422,40 +450,48 @@ void BSPTree::SetMesh(int current_node_idx)
 		}
 		else
 		{
-// 			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
-// 			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
-// 
-// 			Vec2 start = Vec2::ZERO;
-// 			split_plane.Intersection(start, parent_plan);
-// 
-// 			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
-// 			dir.Normalize();
-// 			
-// 			Ray2 ray(start, dir);
-// 			float smallest_t = INFINITY;
-// 
-// 			for(int anc_idx = 1; anc_idx < num_ancestors; ++anc_idx)
-// 			{
-// 				int node_idx = ancestry_idx[anc_idx];
-// 				Plane2 plane = m_bspTree[node_idx].m_split;
-// 				float t[2];
-// 
-// 				Raycast(t, ray, plane, false);
-// 
-// 				if(t[0] < smallest_t)
-// 				{
-// 					smallest_t = t[0];
-// 				}
-// 			}
-// 
-// 			Vec2 end = ray.PointAtTime(smallest_t);
-// 
-// 			CPUMesh ray_mesh;
-// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
-// 
-// 			CpuMeshAddLine(&ray_mesh, false, start, end, 1.0f, color);
-// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
-// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
+			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
+			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
+
+			Vec2 start = Vec2::ZERO;
+			split_plane.Intersection(start, parent_plan);
+
+			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
+			dir.Normalize();
+			
+			Ray2 ray(start, dir);
+			float smallest_t = INFINITY;
+
+			for(int anc_idx = 1; anc_idx < num_ancestors; ++anc_idx)
+			{
+				int node_idx = ancestry_idx[anc_idx];
+				Plane2 plane = m_bspTree[node_idx].m_split;
+				float t[2];
+
+				Raycast(t, ray, plane, false);
+
+				if(t[0] < smallest_t)
+				{
+					smallest_t = t[0];
+				}
+			}
+
+			Vec2 end;
+			if(smallest_t != INFINITY)
+			{
+				end = ray.PointAtTime(smallest_t);
+			}
+			else
+			{
+				end = start + dir * 200.0f;
+			}
+
+			CPUMesh ray_mesh;
+			Rgba color(static_cast<float>(hue_step * num_ancestors));
+
+			CpuMeshAddLine(&ray_mesh, false, start, end, line_thickness, color);
+			current_node.m_mesh = new GPUMesh(g_theRenderer);
+			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
 		}
 	}
 	else if(num_ancestors == 1)
@@ -466,24 +502,24 @@ void BSPTree::SetMesh(int current_node_idx)
 		}
 		else
 		{
-// 			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
-// 			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
-// 
-// 			Vec2 start = Vec2::ZERO;
-// 			split_plane.Intersection(start, parent_plan);
-// 
-// 			
-// 			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
-// 			dir.Normalize();
-// 			
-// 			Vec2 end = start + dir * 200.0f;
-// 
-// 			CPUMesh ray_mesh;
-// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
-// 			
-// 			CpuMeshAddLine(&ray_mesh, false, start, end, 1.0f, color);
-// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
-// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
+			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
+			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
+
+			Vec2 start = Vec2::ZERO;
+			split_plane.Intersection(start, parent_plan);
+
+			
+			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
+			dir.Normalize();
+			
+			Vec2 end = start + dir * 200.0f;
+
+			CPUMesh ray_mesh;
+			Rgba color(static_cast<float>(hue_step * num_ancestors));
+			
+			CpuMeshAddLine(&ray_mesh, false, start, end, line_thickness, color);
+			current_node.m_mesh = new GPUMesh(g_theRenderer);
+			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
 		}
 	}
 	else
@@ -501,17 +537,17 @@ void BSPTree::SetMesh(int current_node_idx)
 		}
 		else
 		{
-// 			CPUMesh plane_mesh;
-// 
-// 			Vec2 dir = current_node.m_split.GetDirection();
-// 			Vec2 start = current_node.m_split.PointOnPlane() - dir * 100.0f;
-// 			Vec2 end = current_node.m_split.PointOnPlane() + dir * 100.0f;
-// 
-// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
-// 			
-// 			CpuMeshAddLine(&plane_mesh, start, end, 1.0f, color);
-// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
-// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(plane_mesh);
+			CPUMesh plane_mesh;
+
+			Vec2 dir = current_node.m_split.GetDirection();
+			Vec2 start = current_node.m_split.PointOnPlane() - dir * 100.0f;
+			Vec2 end = current_node.m_split.PointOnPlane() + dir * 100.0f;
+
+			Rgba color(static_cast<float>(hue_step * num_ancestors));
+			
+			CpuMeshAddLine(&plane_mesh, start, end, line_thickness, color);
+			current_node.m_mesh = new GPUMesh(g_theRenderer);
+			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(plane_mesh);
 		}
 	}
 }
@@ -552,6 +588,62 @@ void BSPTree::RenderNode(int current_node_idx) const
 		g_theRenderer->BindMaterial(*m_material);
 		g_theRenderer->DrawMesh(*m_bspTree[current_node_idx].m_mesh);
 	}
+}
+
+
+bool BSPTree::CanSee(const Vec2& start, const Vec2& end, Vec2& out_start, int current_node_idx)
+{
+	float temp;
+	Vec2 intersection;
+	bool hit;
+
+	BSPNode& current_node = m_bspTree[current_node_idx];
+	if(current_node.m_isLeaf)
+	{
+		hit = current_node.m_spaceType == SPACE_FREE;
+		out_start = end;
+		return hit;
+	}
+
+	PointType start_type = ClassifyPoint(start, current_node.m_split);
+	PointType end_type = ClassifyPoint(end, current_node.m_split);
+
+	if(start_type == POINT_ONLINE && end_type == POINT_ONLINE)
+	{
+		hit = CanSee(start, end, out_start, current_node.m_frontChildIdx);
+		out_start = intersection;
+		return hit;
+	}
+
+	if(start_type == POINT_INFRONT && end_type == POINT_BEHIND)
+	{
+		GetIntersection(start, end, current_node.m_split, intersection, temp);
+		hit = CanSee(start, intersection, out_start, current_node.m_frontChildIdx)
+		&& CanSee(end, intersection, out_start, current_node.m_backChildIdx);
+		out_start = intersection;
+		return hit;
+	}
+
+	if(start_type == POINT_BEHIND && end_type == POINT_INFRONT)
+	{
+		GetIntersection(start, end, current_node.m_split, intersection, temp);
+		hit = CanSee(end, intersection, out_start, current_node.m_frontChildIdx)
+			&& CanSee(start, intersection, out_start, current_node.m_backChildIdx);
+		out_start = intersection;
+		return hit;
+	}
+
+	//then point is on plane
+	if(start_type == POINT_INFRONT || end_type == POINT_INFRONT)
+	{
+		hit = CanSee(start, end, out_start, current_node.m_frontChildIdx);
+		out_start = intersection;
+		return hit;
+	}
+	
+	hit = CanSee(start, end, out_start, current_node.m_backChildIdx);
+	out_start = intersection;
+	return hit;
 }
 
 
@@ -637,3 +729,33 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int
 	return select_segment_idx;
 }
 
+bool BSPTree::GetIntersection(const Vec2& start, const Vec2& end, const Plane2& plane, Vec2& intersection, float& t)
+{
+	//TODO: go over math
+	Vec2 dir = end - start;
+	const float line_length = DotProduct(dir, plane.m_normal);
+	if(IsZero(line_length))
+	{
+		return false;
+	}
+
+	Vec2 line = plane.PointOnPlane() - start;
+	float dist_from_point = DotProduct(line, plane.m_normal);
+	t = dist_from_point / line_length;
+
+
+	if(t < 0.0f)
+	{
+		return false;
+	}
+	else
+	{
+		if(t > 1.0f)
+		{
+			return false;
+		}
+	}
+
+	intersection = start + dir*t;
+	return true;
+}

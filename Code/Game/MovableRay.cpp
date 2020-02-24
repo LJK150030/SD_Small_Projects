@@ -148,6 +148,18 @@ void MovableRay::SetEnd(const float ray_t_val)
 }
 
 
+Vec2 MovableRay::GetStart() const
+{
+	return m_debugSegment.m_start;
+}
+
+
+Vec2 MovableRay::GetEnd() const
+{
+	return m_debugSegment.m_end;
+}
+
+
 void MovableRay::PreUpdate()
 {
 	m_position = m_raySegment.GetCenter();

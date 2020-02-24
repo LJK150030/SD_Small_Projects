@@ -99,10 +99,22 @@ void Game::Update(const double delta_seconds)
 
 	UpdateEntities(delta_seconds);
 
+
 	if(m_sceneUpdated)
 	{
 		m_bspSet = false;
 	}
+
+// 	if (m_bspSet)
+// 	{
+// 		Vec2 intersection;
+// 		bool result = m_bspTree.CanSee(m_movableRay.GetStart(), m_movableRay.GetEnd(), intersection);
+// 
+// 		if(result)
+// 		{
+// 			m_movableRay.SetEnd(intersection);
+// 		}
+// 	}
 }
 
 void Game::UpdateEntities(double delta_seconds)
@@ -111,28 +123,33 @@ void Game::UpdateEntities(double delta_seconds)
 	m_movableRay.PreUpdate();
 	
 	MouseCollisionTest(m_selectedShapes);
-	
-	float smallest_contact_point = INFINITY;
-	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
-	{
-		m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
-		
-		float t_val[] = {0.0f};
-		const bool hit = m_movableRay.CollideWithConvexShape(t_val, *m_convexShapes[ent_idx]);
 
-		if(hit)
+
+//	if(!m_bspSet)
+//	{
+		float smallest_contact_point = INFINITY;
+		for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
 		{
-			if(smallest_contact_point > t_val[0])
+			m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
+
+			float t_val[] = { 0.0f };
+			const bool hit = m_movableRay.CollideWithConvexShape(t_val, *m_convexShapes[ent_idx]);
+
+			if (hit)
 			{
-				smallest_contact_point = t_val[0];
+				if (smallest_contact_point > t_val[0])
+				{
+					smallest_contact_point = t_val[0];
+				}
 			}
 		}
-	}
 
-	if(smallest_contact_point != INFINITY)
-	{
-		m_movableRay.SetEnd(smallest_contact_point);
-	}
+		if (smallest_contact_point != INFINITY)
+		{
+			m_movableRay.SetEnd(smallest_contact_point);
+		}
+//	}
+	
 	
 	m_movableRay.Update(static_cast<float>(delta_seconds));
 }
