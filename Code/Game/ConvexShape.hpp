@@ -20,10 +20,11 @@ public:
 	~ConvexHull2D();
 	
 	ConvexHull2D(const ConvexPolygon2D& poly);
+	explicit ConvexHull2D(const std::vector<Vec2>& points); 
 	
 	void Update(const Vec2& mouse_position, bool render_this_frame);
 	void DebugRender(const Matrix44& model_matrix) const;
-
+	
 private:
 	bool m_renderFrame = false;
 	
@@ -43,7 +44,8 @@ public:
 	ConvexPolygon2D();
 	~ConvexPolygon2D();
 
-	explicit ConvexPolygon2D(const ConvexHull2D& hull);
+	ConvexPolygon2D(const ConvexHull2D& hull);
+	explicit ConvexPolygon2D(const std::vector<Plane2>& hull);
 
 private:
 	void RandomCcwPoints(std::vector<Vec2>& out) const;
@@ -118,4 +120,5 @@ private:
 	float m_maxY = WORLD_TR_CORNER.y;
 
 	Vec2 m_pointLocalPos = Vec2::ZERO;
+
 };

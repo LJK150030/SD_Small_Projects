@@ -143,7 +143,70 @@ ConvexPolygon2D::~ConvexPolygon2D() = default;
 ConvexPolygon2D::ConvexPolygon2D(const ConvexHull2D& hull)
 {
 	UNUSED(hull);
-	ASSERT_OR_DIE(false, "ConvexPolygon2D using a hull has not been made yet")
+	ERROR_AND_DIE("Have not made a convexpolygon from convexhull function yet")
+}
+
+ConvexPolygon2D::ConvexPolygon2D(const std::vector<Plane2>& hull)
+{	
+	const int max_hulls = static_cast<int>(hull.size());
+	std::vector<int> planes_left = std::vector<int>();
+	planes_left.reserve(max_hulls);
+	for(int plane_idx = 1; plane_idx < max_hulls; ++plane_idx)
+	{
+		planes_left.push_back(plane_idx);
+	}
+
+	std::vector<int> hull_winding_order_idx = std::vector<int>();
+	hull_winding_order_idx.reserve(max_hulls);
+	hull_winding_order_idx.push_back(0);
+
+
+	int num_checked = 1;
+	while(num_checked < max_hulls)
+	{
+		const int plane_1_idx = hull_winding_order_idx[num_checked-1];
+		Plane2 plane_1 = hull[plane_1_idx];
+		float smallest_angle_change_degrees = 180.0f;
+		int smallest_angle_change_index = -1;
+		int plane_reference_idx = -1;
+
+		const int planes_left_to_test = static_cast<int>(planes_left.size());
+		for (int plane_2_idx = 0; plane_2_idx < planes_left_to_test; ++plane_2_idx)
+		{
+			if (plane_1_idx != planes_left[plane_2_idx])
+			{
+				const int p_2_idx = planes_left[plane_2_idx];
+				Plane2 plane_2 = hull[p_2_idx];
+
+				const float angle = AngleBetweenVectorsDegrees(plane_1.m_normal, plane_2.m_normal);
+
+				if (angle < smallest_angle_change_degrees)
+				{
+					smallest_angle_change_degrees = angle;
+					plane_reference_idx = plane_2_idx;
+					smallest_angle_change_index = p_2_idx;
+				}
+			}
+		}
+
+		hull_winding_order_idx.push_back(smallest_angle_change_index);
+		planes_left.erase(planes_left.begin() + plane_reference_idx);
+		++num_checked;
+	}
+
+
+	// constructing points
+	m_points.clear();
+	m_points.reserve(max_hulls);
+	for (int plane_idx = 0; plane_idx < max_hulls; ++plane_idx)
+	{
+		int next_plane = (plane_idx + 1) % max_hulls;
+		Vec2 point = Vec2::ZERO;
+		bool intersect = hull[plane_idx].Intersection(point, hull[next_plane]);
+		ASSERT_OR_DIE(intersect, "Planes do not intersect")
+			m_points.push_back(point);
+	}
+	
 }
 
 

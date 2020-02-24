@@ -208,7 +208,7 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
-		case Z_KEY: // rotate CCW
+		case Z_KEY: // scale down
 		{
 			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
 			{
@@ -218,7 +218,7 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
-		case X_KEY: // rotate CW
+		case X_KEY: // scale up
 		{
 			for (int hover_id = 0; hover_id < static_cast<int>(m_selectedShapes.size()); ++hover_id)
 			{
@@ -228,16 +228,14 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
-		case NUM_1_KEY: // double the number of shapes
+		case NUM_1_KEY: // move start point
 		{
 			m_movableRay.SetStart(m_mousePos);
-			m_sceneUpdated = true;
 			break;
 		}
-		case NUM_2_KEY: // double the number of shapes
+		case NUM_2_KEY: // move end point
 		{
 			m_movableRay.SetEnd(m_mousePos);
-			m_sceneUpdated = true;
 			break;
 		}
 		default:
@@ -282,7 +280,7 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 		}
 		case F2_KEY:
 		{
-			m_bspTree.BuildBspTree(HEURISTIC_RANDOM, m_convexShapes);
+			m_bspTree.BuildBspTree(HEURISTIC_SCORE, m_convexShapes);
 			m_sceneUpdated = false;
 			m_bspSet = true;
 			break;

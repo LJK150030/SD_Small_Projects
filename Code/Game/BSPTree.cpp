@@ -2,15 +2,22 @@
 
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/Ray2.hpp"
+#include "Engine/Renderer/GPUMesh.hpp"
+#include "Engine/Renderer/Material.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
-BSPNode::BSPNode() {}
-BSPNode::~BSPNode() {}
+BSPNode::BSPNode() = default;
+BSPNode::~BSPNode()
+{
+}
 
 
 BSPTree::BSPTree()
 {
 	m_bspTree = std::vector<BSPNode>();
 	m_sceneSegments = std::vector<Segment2>();
+
+	m_material = g_theRenderer->CreateOrGetMaterial("white.mat");
 }
 
 
@@ -26,7 +33,11 @@ void BSPTree::BuildBspTree(BspHeuristic plane_selection, const std::vector<Conve
 	Clear();
 
 	const int num_geometry = static_cast<int>(geometry_list.size());
-	m_sceneSegments.reserve(num_geometry * 5);
+// 	m_sceneSegments.reserve(num_geometry * 5 + 4);
+// 	m_sceneSegments.emplace_back(WORLD_BOUNDS.mins, Vec2(WORLD_BOUNDS.maxs.x, WORLD_BOUNDS.mins.y));
+// 	m_sceneSegments.emplace_back(Vec2(WORLD_BOUNDS.maxs.x, WORLD_BOUNDS.mins.y), WORLD_BOUNDS.maxs);
+// 	m_sceneSegments.emplace_back(WORLD_BOUNDS.maxs, Vec2(WORLD_BOUNDS.mins.x, WORLD_BOUNDS.maxs.y));
+// 	m_sceneSegments.emplace_back(Vec2(WORLD_BOUNDS.mins.x, WORLD_BOUNDS.maxs.y), WORLD_BOUNDS.mins);
 
 	std::vector<int> seg_indexes = std::vector<int>();
 	seg_indexes.reserve(num_geometry * 5);
@@ -48,20 +59,30 @@ void BSPTree::BuildBspTree(BspHeuristic plane_selection, const std::vector<Conve
 	m_bspTree.reserve(num_geometry * 5);
 	m_bspTree.emplace_back(); //root node
 	
-	BuildBspSubTree(0, seg_indexes);
+	BuildBspSubTree(0, seg_indexes, -1);
+
+	//don't need this info any more
+	m_sceneSegments.clear();
+
+	//walk the tree to add rendering objs
+	//WalkTreePreOrder(0);
+	
+	//walk the tree to set the type
+	WalkTreePostOrder(0);
 }
 
 void BSPTree::Render() const
 {
+	//WalkTreePostOrder(0);
 }
 
 
-void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_index_list)
+void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_index_list, int parent_idx)
 {
 	std::vector<int> front_idx_list = std::vector<int>();
 	std::vector<int> back_idx_list = std::vector<int>();
 
-	const int best_split_idx = SelectBestSplitterIndex(seg_index_list);
+	const int best_split_idx = SelectBestSplitterIndex(seg_index_list, parent_idx);
 	const int best_world_split_idx = seg_index_list[best_split_idx];
 	const Segment2 best_split = m_sceneSegments[best_world_split_idx];
 	const Plane2 split(best_split.m_start, best_split.m_end);
@@ -109,8 +130,9 @@ void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_
 		m_bspTree.emplace_back();
 
 		const int leaf_idx = static_cast<int>(m_bspTree.size()) - 1;
+		m_bspTree[leaf_idx].m_parentIdx = current_node_idx;
 		m_bspTree[leaf_idx].m_isLeaf = true;
-		m_bspTree[leaf_idx].m_isSolid = false;
+		m_bspTree[leaf_idx].m_spaceType = SPACE_FREE;
 
 		m_bspTree[current_node_idx].m_frontChildIdx = leaf_idx;
 	}
@@ -119,11 +141,12 @@ void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_
 		m_bspTree.emplace_back();
 
 		const int node_idx = static_cast<int>(m_bspTree.size()) - 1;
+		m_bspTree[node_idx].m_parentIdx = current_node_idx;
 		m_bspTree[node_idx].m_isLeaf = false;
-		m_bspTree[node_idx].m_isSolid = false;
+		m_bspTree[node_idx].m_spaceType = SPACE_FREE;
 
 		m_bspTree[current_node_idx].m_frontChildIdx = node_idx;
-		BuildBspSubTree(node_idx, front_idx_list);
+		BuildBspSubTree(node_idx, front_idx_list, current_node_idx);
 	}
 
 	const int back_list_size = back_idx_list.size();
@@ -132,8 +155,9 @@ void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_
 		m_bspTree.emplace_back();
 
 		const int leaf_idx = static_cast<int>(m_bspTree.size()) - 1;
+		m_bspTree[leaf_idx].m_parentIdx = current_node_idx;
 		m_bspTree[leaf_idx].m_isLeaf = true;
-		m_bspTree[leaf_idx].m_isSolid = true;
+		m_bspTree[leaf_idx].m_spaceType = SPACE_SOLID;
 
 		m_bspTree[current_node_idx].m_backChildIdx = leaf_idx;
 	}
@@ -142,17 +166,25 @@ void BSPTree::BuildBspSubTree(int current_node_idx, const std::vector<int>& seg_
 		m_bspTree.emplace_back();
 
 		const int node_idx = static_cast<int>(m_bspTree.size()) - 1;
+		m_bspTree[node_idx].m_parentIdx = current_node_idx;
 		m_bspTree[node_idx].m_isLeaf = false;
-		m_bspTree[node_idx].m_isSolid = false;
+		m_bspTree[node_idx].m_spaceType = SPACE_FREE;
 
 		m_bspTree[current_node_idx].m_backChildIdx = node_idx;
-		BuildBspSubTree(node_idx, back_idx_list);
+		BuildBspSubTree(node_idx, back_idx_list, current_node_idx);
 	}
 }
 
 
 void BSPTree::Clear()
 {
+	int num_nodes = static_cast<int>(m_bspTree.size());
+	for(int node_idx = 0; node_idx < num_nodes; ++node_idx)
+	{
+		delete m_bspTree[node_idx].m_mesh;
+		m_bspTree[node_idx].m_mesh = nullptr;
+	}
+
 	m_bspTree.clear();
 	m_sceneSegments.clear();
 }
@@ -279,22 +311,267 @@ void BSPTree::SplitPolygon(const Segment2& shape, const Plane2& plane, int& out_
 }
 
 
-int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list)
+void BSPTree::WalkTreeInOrder(int current_node_idx)
+{
+	BSPNode current_node = m_bspTree[current_node_idx];
+
+	
+	if(current_node.m_backChildIdx != -1)
+	{
+		WalkTreeInOrder(current_node.m_backChildIdx);
+	}
+
+	//TODO: add convex hull from the parents
+
+	
+	if (current_node.m_frontChildIdx != -1)
+	{
+		WalkTreeInOrder(current_node.m_frontChildIdx);
+	}
+	
+}
+
+//used to populate the parent nodes
+void BSPTree::WalkTreePreOrder(int current_node_idx)
+{
+	SetMesh(current_node_idx);
+
+	BSPNode current_node = m_bspTree[current_node_idx];
+	
+	if (current_node.m_backChildIdx != -1)
+	{
+		WalkTreePreOrder(current_node.m_backChildIdx);
+	}
+
+	if (current_node.m_frontChildIdx != -1)
+	{
+		WalkTreePreOrder(current_node.m_frontChildIdx);
+	}
+}
+
+
+void BSPTree::WalkTreePostOrder(int current_node_idx)
+{
+	BSPNode& current_node = m_bspTree[current_node_idx];
+
+
+	if (current_node.m_backChildIdx != -1)
+	{
+		WalkTreePostOrder(current_node.m_backChildIdx);
+	}
+
+	if (current_node.m_frontChildIdx != -1)
+	{
+		WalkTreePostOrder(current_node.m_frontChildIdx);
+	}
+
+	SetType(current_node_idx);
+}
+
+
+void BSPTree::SetMesh(int current_node_idx)
+{
+	BSPNode& current_node = m_bspTree[current_node_idx];
+	int hue_step = 45;
+	
+	std::vector<int> ancestry_idx = std::vector<int>();
+	int parent_idx = current_node.m_parentIdx;
+	
+	while(parent_idx != -1)
+	{
+		ancestry_idx.push_back(parent_idx);
+		parent_idx = m_bspTree[parent_idx].m_parentIdx;
+	}
+
+	int num_ancestors = static_cast<int>(ancestry_idx.size());
+	
+	if(num_ancestors > 2)
+	{
+		if (current_node.m_isLeaf)
+		{
+// 			std::vector<Plane2> convex_hull = std::vector<Plane2>();
+// 			convex_hull.reserve(num_ancestors);
+// 
+// 			for(int plane_idx = 0; plane_idx < num_ancestors; ++plane_idx)
+// 			{
+// 				const int ancestor_idx = ancestry_idx[plane_idx];
+// 				convex_hull.push_back(m_bspTree[ancestor_idx].m_split);
+// 			}
+// 
+// 			ConvexPolygon2D poly(convex_hull);
+// 			CPUMesh poly_mesh;
+// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
+// 			color.a = 0.5f;
+// 			int triangle_set = num_ancestors - 2;
+// 
+// 			CPUMesh convex_mesh;
+// 			for (int convex_itr = 0; convex_itr < triangle_set; ++convex_itr)
+// 			{
+// 				CpuMeshAddTriangle(
+// 					&convex_mesh,
+// 					true,
+// 					poly.m_points[0],
+// 					poly.m_points[convex_itr + 1],
+// 					poly.m_points[convex_itr + 2],
+// 					color,
+// 					convex_itr);
+// 			}
+// 
+// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
+// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(convex_mesh); // we won't be updated this;
+		}
+		else
+		{
+// 			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
+// 			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
+// 
+// 			Vec2 start = Vec2::ZERO;
+// 			split_plane.Intersection(start, parent_plan);
+// 
+// 			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
+// 			dir.Normalize();
+// 			
+// 			Ray2 ray(start, dir);
+// 			float smallest_t = INFINITY;
+// 
+// 			for(int anc_idx = 1; anc_idx < num_ancestors; ++anc_idx)
+// 			{
+// 				int node_idx = ancestry_idx[anc_idx];
+// 				Plane2 plane = m_bspTree[node_idx].m_split;
+// 				float t[2];
+// 
+// 				Raycast(t, ray, plane, false);
+// 
+// 				if(t[0] < smallest_t)
+// 				{
+// 					smallest_t = t[0];
+// 				}
+// 			}
+// 
+// 			Vec2 end = ray.PointAtTime(smallest_t);
+// 
+// 			CPUMesh ray_mesh;
+// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
+// 
+// 			CpuMeshAddLine(&ray_mesh, false, start, end, 1.0f, color);
+// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
+// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
+		}
+	}
+	else if(num_ancestors == 1)
+	{
+		if (current_node.m_isLeaf)
+		{
+			//TODO make convex hull
+		}
+		else
+		{
+// 			Plane2 split_plane = m_bspTree[current_node_idx].m_split;
+// 			Plane2 parent_plan = m_bspTree[ancestry_idx[0]].m_split;
+// 
+// 			Vec2 start = Vec2::ZERO;
+// 			split_plane.Intersection(start, parent_plan);
+// 
+// 			
+// 			Vec2 dir = m_bspTree[current_node_idx].m_segment.GetCenter() - start;
+// 			dir.Normalize();
+// 			
+// 			Vec2 end = start + dir * 200.0f;
+// 
+// 			CPUMesh ray_mesh;
+// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
+// 			
+// 			CpuMeshAddLine(&ray_mesh, false, start, end, 1.0f, color);
+// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
+// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(ray_mesh);
+		}
+	}
+	else
+	{
+		//root node
+		if(current_node.m_isLeaf)
+		{
+// 			CPUMesh box_mesh;
+// 
+// 			Rgba color = Rgba::GetRandomColor();
+// 			
+// 			CpuMeshAddQuad(&box_mesh, false, color, WORLD_BOUNDS);
+// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
+// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(box_mesh);
+		}
+		else
+		{
+// 			CPUMesh plane_mesh;
+// 
+// 			Vec2 dir = current_node.m_split.GetDirection();
+// 			Vec2 start = current_node.m_split.PointOnPlane() - dir * 100.0f;
+// 			Vec2 end = current_node.m_split.PointOnPlane() + dir * 100.0f;
+// 
+// 			Rgba color(static_cast<float>(hue_step * num_ancestors));
+// 			
+// 			CpuMeshAddLine(&plane_mesh, start, end, 1.0f, color);
+// 			current_node.m_mesh = new GPUMesh(g_theRenderer);
+// 			current_node.m_mesh->CreateFromCPUMesh<Vertex_PCU>(plane_mesh);
+		}
+	}
+}
+
+void BSPTree::SetType(int current_node_idx)
+{
+	BSPNode& current_node = m_bspTree[current_node_idx];
+	if(!current_node.m_isLeaf)
+	{
+		int back_child_idx = current_node.m_backChildIdx;
+		int front_child_idx = current_node.m_frontChildIdx;
+
+		SpaceType back_type = m_bspTree[back_child_idx].m_spaceType;
+		SpaceType front_type = m_bspTree[front_child_idx].m_spaceType;
+
+		if(back_type == SPACE_SOLID && front_type == SPACE_SOLID)
+		{
+			current_node.m_spaceType = SPACE_SOLID;
+		}
+		else if(back_type == SPACE_FREE && front_type == SPACE_FREE)
+		{
+			current_node.m_spaceType = SPACE_FREE;
+		}
+		else
+		{
+			current_node.m_spaceType = SPACE_MIXED;
+		}
+	}
+}
+
+void BSPTree::RenderNode(int current_node_idx) const
+{
+	if (m_bspTree[current_node_idx].m_mesh)
+	{
+		const Matrix44 model_matrix = Matrix44::IDENTITY;
+
+		g_theRenderer->BindModelMatrix(model_matrix);
+		g_theRenderer->BindMaterial(*m_material);
+		g_theRenderer->DrawMesh(*m_bspTree[current_node_idx].m_mesh);
+	}
+}
+
+
+int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int parent_idx)
 {
 	int	max_segments = static_cast<int>(seg_index_list.size());
 	int	select_segment_idx = -1;
 
-	
 	switch(m_heuristicType)
 	{
 		case HEURISTIC_SCORE:
 			{
-				int	best_score = INT_MAX;
-				int score, splits, back_faces, front_faces;
-				score = splits = back_faces = front_faces = 0;
+				float	best_score = INFINITY;
 				
 				for(int split_idx = 0; split_idx < max_segments; ++split_idx)
 				{
+					float score, splits, back_faces, front_faces, dot;
+					splits = back_faces = front_faces = dot = 0.0f;
+
+
 					const int scene_seg_idx = seg_index_list[split_idx];
 					const Segment2 seg(m_sceneSegments[scene_seg_idx]);
 					const Plane2 split(seg.m_start, seg.m_end);
@@ -303,7 +580,8 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list)
 					{
 						if(split_idx != segment_idx)
 						{
-							const SegmentType type = ClassifySegment(seg, split);
+							const Segment2 test_seg(m_sceneSegments[segment_idx]);
+							const SegmentType type = ClassifySegment(test_seg, split);
 
 							switch (type)
 							{
@@ -326,7 +604,17 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list)
 						}
 					}
 
-					score = Abs(front_faces - back_faces)*2 + (splits * 8);
+					if(parent_idx != -1)
+					{
+						const Vec2 split_normal = split.m_normal;
+						const Vec2 parent_normal = m_bspTree[parent_idx].m_split.m_normal;
+						const float similarity = DotProduct(split_normal, parent_normal);
+						dot = similarity;
+					}
+					
+					score = Abs(front_faces - back_faces) * 7.0f +
+							Abs(dot) * 19.0f +
+							splits * 31.0f;
 
 					if(score < best_score)
 					{
