@@ -257,7 +257,7 @@ bool Game::HandleKeyPressed(const unsigned char key_code)
 		}
 		default:
 		{
-			return false;\
+			return false;
 		}
 	}
 

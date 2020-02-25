@@ -65,7 +65,7 @@ void BSPTree::BuildBspTree(BspHeuristic plane_selection, const std::vector<Conve
 	m_sceneSegments.clear();
 
 	//walk the tree to add rendering objs
-	WalkTreePreOrder(0);
+	AddRenderObjs(0);
 	
 	//walk the tree to set the type
 	SettingSpaceTypes(0);
@@ -340,8 +340,8 @@ void BSPTree::WalkTreeInOrder(int current_node_idx)
 	
 }
 
-//used to populate the parent nodes
-void BSPTree::WalkTreePreOrder(int current_node_idx)
+//walking tree in pre order
+void BSPTree::AddRenderObjs(int current_node_idx)
 {
 	SetMesh(current_node_idx);
 
@@ -349,16 +349,16 @@ void BSPTree::WalkTreePreOrder(int current_node_idx)
 	
 	if (current_node.m_backChildIdx != -1)
 	{
-		WalkTreePreOrder(current_node.m_backChildIdx);
+		AddRenderObjs(current_node.m_backChildIdx);
 	}
 
 	if (current_node.m_frontChildIdx != -1)
 	{
-		WalkTreePreOrder(current_node.m_frontChildIdx);
+		AddRenderObjs(current_node.m_frontChildIdx);
 	}
 }
 
-
+//walking tree in post order
 void BSPTree::SettingSpaceTypes(int current_node_idx)
 {
 	BSPNode& current_node = m_bspTree[current_node_idx];
@@ -378,6 +378,7 @@ void BSPTree::SettingSpaceTypes(int current_node_idx)
 }
 
 
+// walking tree in post order
 void BSPTree::RenderLowestNodes(int current_node_idx) const
 {
 	BSPNode current_node = m_bspTree[current_node_idx];
@@ -578,6 +579,7 @@ void BSPTree::SetType(int current_node_idx)
 	}
 }
 
+
 void BSPTree::RenderNode(int current_node_idx) const
 {
 	if (m_bspTree[current_node_idx].m_mesh)
@@ -591,59 +593,75 @@ void BSPTree::RenderNode(int current_node_idx) const
 }
 
 
-bool BSPTree::CanSee(const Vec2& start, const Vec2& end, Vec2& out_start, int current_node_idx)
+bool BSPTree::CanSee(const Vec2& start, const Vec2& end, Vec2& out_end, int current_node_idx)
 {
-	float temp;
+	float t_val;
 	Vec2 intersection;
-	bool hit;
-
+	bool is_open_space;
 	BSPNode& current_node = m_bspTree[current_node_idx];
+
+	//for either start or end
 	if(current_node.m_isLeaf)
 	{
-		hit = current_node.m_spaceType == SPACE_FREE;
-		out_start = end;
-		return hit;
+		//nothing alters our path
+		is_open_space = current_node.m_spaceType == SPACE_FREE;
+		return is_open_space;
 	}
 
-	PointType start_type = ClassifyPoint(start, current_node.m_split);
-	PointType end_type = ClassifyPoint(end, current_node.m_split);
+	
+	const PointType start_type = ClassifyPoint(start, current_node.m_split);
+	const PointType end_type = ClassifyPoint(end, current_node.m_split);
 
+	// assume on  the line means we are in front of the split
 	if(start_type == POINT_ONLINE && end_type == POINT_ONLINE)
 	{
-		hit = CanSee(start, end, out_start, current_node.m_frontChildIdx);
-		out_start = intersection;
-		return hit;
+		is_open_space = CanSee(start, end, out_end, current_node.m_frontChildIdx);
+		return is_open_space;
 	}
 
+	// in the case of straddling
 	if(start_type == POINT_INFRONT && end_type == POINT_BEHIND)
 	{
-		GetIntersection(start, end, current_node.m_split, intersection, temp);
-		hit = CanSee(start, intersection, out_start, current_node.m_frontChildIdx)
-		&& CanSee(end, intersection, out_start, current_node.m_backChildIdx);
-		out_start = intersection;
-		return hit;
+		GetIntersection(start, end, current_node.m_split, intersection, t_val);
+		const bool can_see_front = CanSee(start, intersection, out_end, current_node.m_frontChildIdx);
+		const bool can_see_behind = CanSee(intersection, end, out_end, current_node.m_backChildIdx);
+
+		if(!can_see_behind)
+		{
+			out_end = intersection;
+		}
+		
+		is_open_space = can_see_front && can_see_behind;
+		return is_open_space;
 	}
 
+	// or other way of straddling
 	if(start_type == POINT_BEHIND && end_type == POINT_INFRONT)
 	{
-		GetIntersection(start, end, current_node.m_split, intersection, temp);
-		hit = CanSee(end, intersection, out_start, current_node.m_frontChildIdx)
-			&& CanSee(start, intersection, out_start, current_node.m_backChildIdx);
-		out_start = intersection;
-		return hit;
+		GetIntersection(start, end, current_node.m_split, intersection, t_val);
+		const bool can_see_front = CanSee(intersection, end, out_end, current_node.m_frontChildIdx);
+		const bool can_see_back = CanSee(start, intersection, out_end, current_node.m_backChildIdx);
+
+		if (!can_see_front)
+		{
+			out_end = intersection;
+		}
+		
+		is_open_space = can_see_front && can_see_back;
+		return is_open_space;
 	}
 
-	//then point is on plane
+	// Lastly, either point is on top of the plane
 	if(start_type == POINT_INFRONT || end_type == POINT_INFRONT)
 	{
-		hit = CanSee(start, end, out_start, current_node.m_frontChildIdx);
-		out_start = intersection;
-		return hit;
+		is_open_space = CanSee(start, end, out_end, current_node.m_frontChildIdx);
+		return is_open_space;
 	}
-	
-	hit = CanSee(start, end, out_start, current_node.m_backChildIdx);
-	out_start = intersection;
-	return hit;
+
+	// last check
+	is_open_space = CanSee(start, end, out_end, current_node.m_backChildIdx);
+	out_end = intersection;
+	return is_open_space;
 }
 
 
@@ -654,61 +672,66 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int
 
 	switch(m_heuristicType)
 	{
+		//todo add a third heuristic that focuses on the three aspects
+		// 1. How many segments can you align with +++ (if you pick this segment, how many other segments are exactly the same)
+		// 2. How many splits do you make -- (what I have earlier, how many points from a segments do you split up)
+		// 3. How unbalanced are you - (same as earlier, how many full segments do you "evenly" split)
+
 		case HEURISTIC_SCORE:
+		{
+			float	best_score = INFINITY;
+
+			for (int split_idx = 0; split_idx < max_segments; ++split_idx)
 			{
-				float	best_score = INFINITY;
-				
-				for(int split_idx = 0; split_idx < max_segments; ++split_idx)
+				float score, splits, back_faces, front_faces, dot;
+				splits = back_faces = front_faces = dot = 0.0f;
+
+
+				const int scene_seg_idx = seg_index_list[split_idx];
+				const Segment2 seg(m_sceneSegments[scene_seg_idx]);
+				const Plane2 split(seg.m_start, seg.m_end);
+
+				for (int segment_idx = 0; segment_idx < max_segments; ++segment_idx)
 				{
-					float score, splits, back_faces, front_faces, dot;
-					splits = back_faces = front_faces = dot = 0.0f;
-
-
-					const int scene_seg_idx = seg_index_list[split_idx];
-					const Segment2 seg(m_sceneSegments[scene_seg_idx]);
-					const Plane2 split(seg.m_start, seg.m_end);
-
-					for (int segment_idx = 0; segment_idx < max_segments; ++segment_idx)
+					if (split_idx != segment_idx)
 					{
-						if(split_idx != segment_idx)
-						{
-							const Segment2 test_seg(m_sceneSegments[segment_idx]);
-							const SegmentType type = ClassifySegment(test_seg, split);
+						const Segment2 test_seg(m_sceneSegments[segment_idx]);
+						const SegmentType type = ClassifySegment(test_seg, split);
 
-							switch (type)
-							{
-								case SEGMENT_BEHIND:
-								{
-									++back_faces;
-									break;
-								}
-								case SEGMENT_INFRONT:
-								{
-									++front_faces;
-									break;
-								}
-								case SEGMENT_STRADDLING:
-								{
-									++splits;
-									break;
-								}
-							}
+						switch (type)
+						{
+						case SEGMENT_BEHIND:
+						{
+							++back_faces;
+							break;
+						}
+						case SEGMENT_INFRONT:
+						{
+							++front_faces;
+							break;
+						}
+						case SEGMENT_STRADDLING:
+						{
+							++splits;
+							break;
+						}
 						}
 					}
 
-					if(parent_idx != -1)
+
+					if (parent_idx != -1)
 					{
 						const Vec2 split_normal = split.m_normal;
 						const Vec2 parent_normal = m_bspTree[parent_idx].m_split.m_normal;
 						const float similarity = DotProduct(split_normal, parent_normal);
 						dot = similarity;
 					}
-					
-					score = Abs(front_faces - back_faces) * 7.0f +
-							Abs(dot) * 19.0f +
-							splits * 31.0f;
 
-					if(score < best_score)
+					score = Abs(front_faces - back_faces) * 7.0f +
+						Abs(dot) * 19.0f +
+						splits * 31.0f;
+
+					if (score < best_score)
 					{
 						best_score = score;
 						select_segment_idx = split_idx;
@@ -716,25 +739,27 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int
 				}
 				break;
 			}
-			
-		case HEURISTIC_RANDOM:
-		default:
+
+			case HEURISTIC_RANDOM:
+			default:
 			{
-				int idx = g_randomNumberGenerator.GetRandomIntInRange(0, max_segments-1);
+				int idx = g_randomNumberGenerator.GetRandomIntInRange(0, max_segments - 1);
 				select_segment_idx = idx;
 				break;
 			}
+		}
 	}
 
 	return select_segment_idx;
 }
+
 
 bool BSPTree::GetIntersection(const Vec2& start, const Vec2& end, const Plane2& plane, Vec2& intersection, float& t)
 {
 	//TODO: go over math
 	Vec2 dir = end - start;
 	const float line_length = DotProduct(dir, plane.m_normal);
-	if(IsZero(line_length))
+	if (IsZero(line_length))
 	{
 		return false;
 	}
@@ -744,18 +769,18 @@ bool BSPTree::GetIntersection(const Vec2& start, const Vec2& end, const Plane2& 
 	t = dist_from_point / line_length;
 
 
-	if(t < 0.0f)
+	if (t < 0.0f)
 	{
 		return false;
 	}
 	else
 	{
-		if(t > 1.0f)
+		if (t > 1.0f)
 		{
 			return false;
 		}
 	}
 
-	intersection = start + dir*t;
+	intersection = start + dir * t;
 	return true;
 }

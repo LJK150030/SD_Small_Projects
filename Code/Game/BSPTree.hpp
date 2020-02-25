@@ -78,7 +78,7 @@ private:
 	void	SplitPolygon(const Segment2& shape, const Plane2& plane, int& out_back_shape_idx, int& out_front_shape_idx);
 		
 	void	WalkTreeInOrder(int current_node_idx);
-	void	WalkTreePreOrder(int current_node_idx);
+	void	AddRenderObjs(int current_node_idx);
 	void	RenderLowestNodes(int current_node_idx) const;
 	void	SettingSpaceTypes(int current_node_idx);
 
