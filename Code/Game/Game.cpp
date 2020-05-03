@@ -44,7 +44,26 @@ UNITTEST("Is false", nullptr, 2)
 Game::Game(): m_mouseEntity(this), m_movableRay(this)
 {
 	m_convexShapes = std::vector<ConvexShape2D*>();
-	m_convexShapes.push_back(new ConvexShape2D(this));
+	m_convexShapes.reserve(MAX_SHAPES);
+	for(int shape_idx = 0; shape_idx < m_currentNumConvexShapes; ++shape_idx)
+	{
+		m_convexShapes.push_back(new ConvexShape2D(this));
+	}
+	
+
+	
+	m_invisibleRays = std::vector <Ray2>();
+	m_invisibleRays.reserve(MAX_RAYS);
+	for(int ray_idx = 0; ray_idx < m_currentNumRays; ++ray_idx)
+	{
+		float x = g_randomNumberGenerator.GetRandomFloatInRange(0.0, WORLD_HEIGHT * WORLD_ASPECT);
+		float y = g_randomNumberGenerator.GetRandomFloatInRange(0.0, WORLD_HEIGHT);
+
+		Vec2 dir = g_randomNumberGenerator.GetRandomVec2InsideUnitCircle();
+
+		
+		m_invisibleRays.push_back(Ray2(Vec2(x, y), dir));
+	}
 }
 
 
@@ -90,31 +109,38 @@ void Game::Update(const double delta_seconds)
 	m_time += static_cast<float>(delta_seconds);
 	m_currentFrame++;
 
+	const float fps = 1.0f / static_cast<float>(delta_seconds);
+
 	ImGui::Text("CurrentFrame: %i", m_currentFrame);
-	ImGui::Text("FPS: %i", m_currentFrame / RoundUpToNearestInt(m_time));
-	ImGui::Text("Avg Delta_sec: %f", CalcRollingAvgTick(delta_seconds));
+	ImGui::Text("FPS: %f", CalcAverageTick(fps));
 	ImGui::Text("Num Shapes: %i", m_currentNumConvexShapes);
+	ImGui::Text("Num Rays: %i", m_currentNumRays);
 
 	m_mousePos = g_theWindow->GetMousePosition(WORLD_BOUNDS);
 
 	UpdateEntities(delta_seconds);
+	
+	m_numHits = 0;
+	for(int ray_idx = 0; ray_idx < m_currentNumRays; ++ray_idx)
+	{
+		for(int convex_idx = 0; convex_idx < m_currentNumConvexShapes; ++convex_idx)
+		{
+			float t_val[] = { 0.0f };
+			const bool hit = RayToConvexShape(m_invisibleRays[ray_idx], *m_convexShapes[convex_idx]);
 
+			if (hit)
+			{
+				++m_numHits;
+				break;
+			}
+		}
+	}
 
 	if(m_sceneUpdated)
 	{
 		m_bspSet = false;
 	}
 
-// 	if (m_bspSet)
-// 	{
-// 		Vec2 intersection;
-// 		bool result = m_bspTree.CanSee(m_movableRay.GetStart(), m_movableRay.GetEnd(), intersection);
-// 
-// 		if(result)
-// 		{
-// 			m_movableRay.SetEnd(intersection);
-// 		}
-// 	}
 }
 
 void Game::UpdateEntities(double delta_seconds)
@@ -125,30 +151,32 @@ void Game::UpdateEntities(double delta_seconds)
 	MouseCollisionTest(m_selectedShapes);
 
 
-//	if(!m_bspSet)
-//	{
-		float smallest_contact_point = INFINITY;
-		for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
+	float smallest_contact_point = INFINITY;
+	int closest_convx_idx = -1;
+	int closest_plain_idx = -1;
+	for (int ent_idx = 0; ent_idx < static_cast<int>(m_convexShapes.size()); ++ent_idx)
+	{
+		m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
+
+		float t_val[] = { 0.0f };
+		int plain_idx = -1;
+		const bool hit = m_movableRay.CollideWithConvexShape(t_val, &plain_idx, *m_convexShapes[ent_idx]);
+
+		if (hit)
 		{
-			m_convexShapes[ent_idx]->Update(static_cast<float>(delta_seconds));
-
-			float t_val[] = { 0.0f };
-			const bool hit = m_movableRay.CollideWithConvexShape(t_val, *m_convexShapes[ent_idx]);
-
-			if (hit)
+			if (smallest_contact_point > t_val[0])
 			{
-				if (smallest_contact_point > t_val[0])
-				{
-					smallest_contact_point = t_val[0];
-				}
+				smallest_contact_point = t_val[0];
+				closest_convx_idx = ent_idx;
+				closest_plain_idx = plain_idx;
 			}
 		}
+	}
 
-		if (smallest_contact_point != INFINITY)
-		{
-			m_movableRay.SetEnd(smallest_contact_point);
-		}
-//	}
+	if (smallest_contact_point != INFINITY)
+	{
+		m_movableRay.SetEnd(smallest_contact_point, m_convexShapes[closest_convx_idx], closest_plain_idx);
+	}
 	
 	
 	m_movableRay.Update(static_cast<float>(delta_seconds));
@@ -295,9 +323,48 @@ bool Game::HandleKeyReleased(const unsigned char key_code)
 			m_sceneUpdated = true;
 			break;
 		}
+		case E_KEY: // half the number of shapes
+		{
+			m_currentNumRays = ClampInt(
+				m_currentNumRays / 2,
+				MIN_RAYS,
+				MAX_RAYS
+			);
+			UpdateNumberOfRays();
+			break;
+		}
+		case R_KEY: // double the number of shapes
+		{
+			m_currentNumRays = ClampInt(
+				m_currentNumRays * 2,
+				MIN_RAYS,
+				MAX_RAYS
+			);
+			UpdateNumberOfRays();
+			break;
+		}
+		case D_KEY: // re-roll the scene and build BSP tree
+		{
+			const int cur_rays = m_currentNumRays;
+			m_currentNumRays = 1;
+			UpdateNumberOfRays();
+			m_currentNumRays = cur_rays;
+			UpdateNumberOfRays();
+				
+			const int cur_shapes = m_currentNumConvexShapes;
+			m_currentNumConvexShapes = 1;
+			UpdateNumberOfShapes();
+			m_currentNumConvexShapes = cur_shapes;
+			UpdateNumberOfShapes();
+
+			m_bspTree.BuildBspTree(HEURISTIC_RANDOM, m_convexShapes);
+			m_sceneUpdated = false;
+			m_bspSet = true;
+			break;
+		}
 		case F2_KEY:
 		{
-			m_bspTree.BuildBspTree(HEURISTIC_SCORE, m_convexShapes);
+			m_bspTree.BuildBspTree(HEURISTIC_RANDOM, m_convexShapes);
 			m_sceneUpdated = false;
 			m_bspSet = true;
 			break;
@@ -392,6 +459,43 @@ void Game::UpdateNumberOfShapes()
 
 }
 
+
+void Game::UpdateNumberOfRays()
+{
+	const int num_rays_in_vec = static_cast<int>(m_invisibleRays.size());
+	const int current_index = num_rays_in_vec - 1;
+
+	if (num_rays_in_vec == m_currentNumRays)
+	{
+		return;
+	}
+
+	if (num_rays_in_vec < m_currentNumRays) // we need to add more
+	{
+		const int difference = m_currentNumRays - num_rays_in_vec;
+
+		for (int shape_adding = 0; shape_adding < difference; ++shape_adding)
+		{
+			float x = g_randomNumberGenerator.GetRandomFloatInRange(0.0, WORLD_HEIGHT * WORLD_ASPECT);
+			float y = g_randomNumberGenerator.GetRandomFloatInRange(0.0, WORLD_HEIGHT);
+
+			Vec2 dir = g_randomNumberGenerator.GetRandomVec2InsideUnitCircle();
+
+
+			m_invisibleRays.push_back(Ray2(Vec2(x, y), dir));
+		}
+	}
+	else // we need to "remove" some
+	{
+		const int difference = num_rays_in_vec - m_currentNumRays;
+
+		for (int shape_removing = 0; shape_removing < difference; ++shape_removing)
+		{
+			m_invisibleRays.pop_back();
+		}
+	}
+}
+
 void Game::MouseCollisionTest(std::vector<ConvexShape2D*>& out)
 {
 	out.clear();
@@ -406,4 +510,58 @@ void Game::MouseCollisionTest(std::vector<ConvexShape2D*>& out)
 	}
 	
 	
+}
+
+bool Game::RayToConvexShape(const Ray2& ray, const ConvexShape2D& shape)
+{
+	std::vector<Plane2> planes = shape.GetLocalConvexPlanes();
+	float t_vals[2];
+
+	// check if inside
+	if (shape.IsPointInsideShape(ray.m_pos))
+	{
+		return true;
+	}
+
+	// mid check
+	bool mid_test = false;
+	const uint num_hits = Raycast(t_vals, ray, shape.GetPosition(), shape.GetScale());
+	mid_test = num_hits > 0;
+	
+
+	if (mid_test)
+	{
+		float smallest_t_val = INFINITY;
+		int plane_intersection_idx = -1;
+
+		//check all planes if they intersect.
+		for (int plane_idx = 0; plane_idx < static_cast<int>(planes.size()); ++plane_idx)
+		{
+			float t_vals[2];
+
+			//world ray cast, to local ray cast
+			Vec2 local_pos = PointToLocalSpace(ray.m_pos, planes[plane_idx].m_normal, planes[plane_idx].GetDirection(), planes[plane_idx].PointOnPlane());
+			Vec2 local_dir = VectorToLocalSpace(ray.m_pos, planes[plane_idx].m_normal, planes[plane_idx].GetDirection());
+
+			Ray2 local_ray_cast(local_pos, local_dir);
+
+			uint num_hits = Raycast(t_vals, local_ray_cast, planes[plane_idx]);
+
+			if (num_hits > 0)
+			{
+				if (t_vals[0] < smallest_t_val)
+				{
+					smallest_t_val = t_vals[0];
+					plane_intersection_idx = plane_idx;
+				}
+			}
+		}
+
+		if(smallest_t_val != INFINITY)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

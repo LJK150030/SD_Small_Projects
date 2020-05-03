@@ -10,6 +10,9 @@ class AudioSystem;
 extern App* g_theApp;
 extern AudioSystem* g_theAudio;
 
+typedef unsigned int uint;
+typedef unsigned char uchar;
+
 
 // key codes
 constexpr int SHIFT_KEY = 16;
@@ -82,8 +85,9 @@ const Vec2 WORLD_BL_CORNER(-0.5f * WORLD_WIDTH, -0.5f * WORLD_HEIGHT);
 const Vec2 WORLD_TR_CORNER(0.5f * WORLD_WIDTH, 0.5f * WORLD_HEIGHT);
 const AABB2 WORLD_BOUNDS(WORLD_BL_CORNER, WORLD_TR_CORNER);
 
-constexpr int MAX_SAMPLE = 128;
-extern int tick_idx;
-extern double tick_sum;
-extern double tick_list[MAX_SAMPLE];
-double CalcRollingAvgTick(double new_tick);
+constexpr int g_maxTickSample = 128;
+inline int g_tickIndex = 0;
+inline float g_tickSum = 0;
+inline float g_tickList[g_maxTickSample] = { 0 };
+
+float CalcAverageTick(float new_tick);

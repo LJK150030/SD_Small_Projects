@@ -739,14 +739,14 @@ int BSPTree::SelectBestSplitterIndex(const std::vector<int>& seg_index_list, int
 				}
 				break;
 			}
+		}
 
-			case HEURISTIC_RANDOM:
-			default:
-			{
-				int idx = g_randomNumberGenerator.GetRandomIntInRange(0, max_segments - 1);
-				select_segment_idx = idx;
-				break;
-			}
+		case HEURISTIC_RANDOM:
+		default:
+		{
+			int idx = g_randomNumberGenerator.GetRandomIntInRange(0, max_segments - 1);
+			select_segment_idx = idx;
+			break;
 		}
 	}
 

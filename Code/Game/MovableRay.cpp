@@ -139,12 +139,19 @@ void MovableRay::SetEnd(const Vec2& pos)
 }
 
 
-void MovableRay::SetEnd(const float ray_t_val)
+void MovableRay::SetEnd(const float ray_t_val, ConvexShape2D* convx, int plane_idx)
 {
 	m_raySegment.m_end = m_ray.PointAtTime(ray_t_val);
 	
 	float diff_time = Abs(m_debugSegment.GetLength() - ray_t_val);
 	m_debugSegment.m_end = m_ray.PointAtTime(m_raySegment.GetLength() + diff_time);
+
+	if(convx != nullptr && plane_idx != -1)
+	{
+		std::vector<Plane2> planes = convx->GetLocalConvexPlanes();
+		Vec2 ref_dir = ReflectVectorOffSurfaceNormal(m_ray.m_dir, planes[plane_idx].m_normal);
+		m_reflectingRay = Ray2(m_raySegment.m_end, ref_dir);
+	}
 }
 
 
@@ -170,14 +177,15 @@ void MovableRay::PreUpdate()
 
 
 
-bool MovableRay::CollideWithConvexShape(float* out, const ConvexShape2D& shape)
+bool MovableRay::CollideWithConvexShape(float* out_t, int* out_plane_idx, const ConvexShape2D& shape)
 {
 	std::vector<Plane2> planes = shape.GetLocalConvexPlanes();
 
 	//early out inside
 	if(shape.IsPointInsideShape(m_ray.m_pos))
 	{
-		out[0] = 0.01f;
+		out_t[0] = 0.01f;
+		*out_plane_idx = -1;
 
 		m_reflectingRay = m_ray;
 
@@ -219,17 +227,20 @@ bool MovableRay::CollideWithConvexShape(float* out, const ConvexShape2D& shape)
  		//check if the point is in the hull, without the plan that it intersected.
  		if(plane_intersection_idx >= 0)
  		{
- 			Vec2 contact_point = m_ray.PointAtTime(largest_t_val);
-			if (shape.IsPointInsideShapeIgnorePlane(contact_point, plane_intersection_idx))
+ 			const Vec2 contact_point = m_ray.PointAtTime(largest_t_val);
+
+			const Vec2 dir = contact_point - m_ray.m_pos;
+			const float segment_length = m_debugSegment.GetLengthSqr();
+			const float ray_length = dir.GetLengthSquared();
+ 			
+			if (ray_length < segment_length && shape.IsPointInsideShapeIgnorePlane(contact_point, plane_intersection_idx))
 			{
 				const float segment_end_t_value = m_raySegment.GetLength();
 
-				out[0] = ClampFloat(largest_t_val, 0.0f, segment_end_t_value);
-
-				Vec2 ref_dir = ReflectVectorOffSurfaceNormal(m_ray.m_dir, planes[plane_intersection_idx].m_normal);
-				m_reflectingRay = Ray2(contact_point, ref_dir);
+				out_t[0] = ClampFloat(largest_t_val, 0.0f, segment_end_t_value);
 
 				m_hitThisFrame = true;
+				*out_plane_idx = plane_intersection_idx;
 				return true;
 			}
  		}

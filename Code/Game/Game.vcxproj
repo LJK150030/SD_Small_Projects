@@ -193,6 +193,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="ByteBufferParser.cpp" />
+    <ClCompile Include="ByteBufferWriter.cpp" />
     <ClCompile Include="BSPTree.cpp" />
     <ClCompile Include="ConvexShape.cpp" />
     <ClCompile Include="Entity.cpp" />
@@ -209,6 +211,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp" />
+    <ClInclude Include="ByteBufferParser.hpp" />
+    <ClInclude Include="ByteBufferWriter.hpp" />
     <ClInclude Include="BSPTree.hpp" />
     <ClInclude Include="ConvexShape.hpp" />
     <ClInclude Include="EngineBuildPreferences.hpp" />

@@ -22,13 +22,13 @@ public:
 
 	void SetStart(const Vec2& pos);
 	void SetEnd(const Vec2& pos);
-	void SetEnd(float ray_t_val);
+	void SetEnd(float ray_t_val, ConvexShape2D* convx = nullptr, int plane_idx = -1);
 
 	Vec2 GetStart() const;
 	Vec2 GetEnd() const;
 
 	void PreUpdate();
-	bool CollideWithConvexShape(float* out, const ConvexShape2D& shape);
+	bool CollideWithConvexShape(float* out_t, int* out_plane_idx, const ConvexShape2D& shape);
 
 private:
 	void ConstructArrow();

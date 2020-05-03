@@ -1,19 +1,16 @@
 #include "Game/GameCommon.hpp"
 
-int tick_idx = 0;
-double tick_sum = 0.0;
-double tick_list[MAX_SAMPLE] = {};
 
-double CalcRollingAvgTick(double new_tick)
+float CalcAverageTick(const float new_tick)
 {
-	tick_sum -= tick_list[tick_idx];  
-	tick_sum += new_tick;             
-	tick_list[tick_idx] = new_tick;   
-	if (++tick_idx == MAX_SAMPLE)
+	g_tickSum -= g_tickList[g_tickIndex];
+	g_tickSum += new_tick;
+	g_tickList[g_tickIndex] = new_tick;
+	if (++g_tickIndex == g_maxTickSample)    /* inc buffer index */
 	{
-		tick_idx = 0;
+		g_tickIndex = 0;
 	}
 
 	/* return average */
-	return (tick_sum / MAX_SAMPLE);
+	return(g_tickSum / static_cast<float>(g_maxTickSample));
 }

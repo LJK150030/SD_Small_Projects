@@ -8,6 +8,9 @@
     <Filter Include="Data">
       <UniqueIdentifier>{708d39a6-5742-4990-868d-6e953e4ef68b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="General\Binary File">
+      <UniqueIdentifier>{68a3112f-814e-4fe8-9ecf-582189120fce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main_Windows.cpp">
@@ -37,6 +40,12 @@
     <ClCompile Include="BSPTree.cpp">
       <Filter>General</Filter>
     </ClCompile>
+    <ClCompile Include="ByteBufferParser.cpp">
+      <Filter>General\Binary File</Filter>
+    </ClCompile>
+    <ClCompile Include="ByteBufferWriter.cpp">
+      <Filter>General\Binary File</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp">
@@ -65,6 +74,12 @@
     </ClInclude>
     <ClInclude Include="BSPTree.hpp">
       <Filter>General</Filter>
+    </ClInclude>
+    <ClInclude Include="ByteBufferParser.hpp">
+      <Filter>General\Binary File</Filter>
+    </ClInclude>
+    <ClInclude Include="ByteBufferWriter.hpp">
+      <Filter>General\Binary File</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

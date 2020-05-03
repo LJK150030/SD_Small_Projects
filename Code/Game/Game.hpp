@@ -3,6 +3,7 @@
 #include "Engine/Math/Matrix44.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
 #include "Engine/Math/Segment2.hpp"
+#include "Engine/Math/Ray2.hpp"
 
 #include "Game/Point.hpp"
 #include "Game/MovableRay.hpp"
@@ -45,8 +46,10 @@ private:
 	void InitCamera();
 	void InitGameObjs();
 	void UpdateNumberOfShapes();
+	void UpdateNumberOfRays();
 
 	void MouseCollisionTest(std::vector<ConvexShape2D*>& out);
+	bool RayToConvexShape(const Ray2& ray, const ConvexShape2D& shape);
 	
 private:
 
@@ -69,10 +72,18 @@ private:
 	
 	std::vector<ConvexShape2D*> m_convexShapes;
 	std::vector<ConvexShape2D*> m_selectedShapes;
+	std::vector<Ray2> m_invisibleRays;
+	
 	int m_currentNumConvexShapes = 1;
 	const int MIN_SHAPES = 1;
 	const int MAX_SHAPES = 8'192;
 
+	int m_currentNumRays = 1;
+	const int MIN_RAYS = 1;
+	const int MAX_RAYS = 16'384;
+
+	int m_numHits = 0;
+	
 	BSPTree m_bspTree;
 	bool	m_bspSet = false;
 	bool	m_sceneUpdated = false;
